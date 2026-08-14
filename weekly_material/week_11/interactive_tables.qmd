@@ -1,0 +1,373 @@
+---
+title: "Interactive HTML Tables (DT and Formattable)"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r setup}
+#| include: false
+if (!require("pacman")) install.packages("pacman")
+library(pacman)
+p_load(tidyverse, DT, formattable)
+
+filepath <- "data/stds-by-disease-county-year-sex-2001-2021.csv"
+
+std <- read_csv(filepath) %>%
+  rename_with(~ tolower(gsub(" ","_",.x,fixed=TRUE))) 
+
+std_quick <- std %>%
+  filter(county!="California" & sex=="Total"& year==2018) %>%
+  select(county,disease,rate) %>%
+  pivot_wider(names_from=disease, values_from=rate)
+
+```
+
+## Introduction and Overview
+
+Earlier in the course, we introduced you to kable which allows you to create nice-looking, informative tables. However, one of the drawbacks of kable is that it can only create static versions of tables. R also has packages that interactive content, which enables the viewer to click, hover, or sweep to get pop-up information, filter, sort, and otherwise drill down into the information you're presenting. And they still can look great!
+
+There are many packages that do this; we'll cover DT and formattable in this course. Here's a quick sample of an interactive table from each package:
+
+
+### Simple datatable
+
+```{r}
+datatable(std_quick, class = "display")
+
+```
+
+### Simple formattable
+
+```{r}
+formattable(std_quick)
+
+```
+
+
+## Datatable (aka DT)
+
+Let's start by looking at the DT package. DT provides an R interface to the JavaScript library DataTables R data objects (matrices or data frames) can be displayed as tables on HTML pages. [Lots of great DT/datatable documentation can be found here.](https://rstudio.github.io/DT/)
+
+DT provides you the ability to create tables that allow the viewer to:
+
+-   Filter using a search or drop down field
+-   Split table into “pages”
+-   Sort
+-   Static and conditional styling
+-   Cell editing
+-   Specify Column names
+-   Download data table in excel, csv, pdf, check what the other one is
+
+There are extensive options available to customize the look and behavior of datatable. We won't be able to go through all of them, but will walk through enough of the basics to get you started and you can look through the documentation for more specifics. These highlighted options are very similar to ones you've seen for kable:
+
+![](images/dt_familiar_options.png)
+
+But there are also many that are new (all are [highlighted and explained in the documentation](https://rstudio.github.io/DT/options.html))
+
+![](images/dt_new_options1.png)
+
+And some more complex ones including for customizing using snippits of JavaScript to allow you to capture and use viewer clicks and hovers (this is definitely advanced but lots of fun once you figure it out!):
+
+![](images/dt_new_options2.png)
+
+And finally some options for creating [custom style](https://rstudio.github.io/DT/010-style.html) and [formats](https://rstudio.github.io/DT/functions.html) for your table:
+
+![](images/dt_style_format.png)
+
+So let's get into an example!
+
+```{r}
+# create a dataset for dt
+std_tbl <- std %>%
+  filter(county!="California" & sex=="Total"& year==2018) %>%
+  select(county,disease,rate) %>%
+  pivot_wider(names_from=disease, values_from=rate)
+
+
+```
+
+
+### Simple DT
+
+```{r}
+datatable(std_tbl)
+
+```
+
+### Page Length and default order
+
+```{r}
+datatable(std_tbl,
+          options = list(
+            pageLength=5,
+            lengthMenu=c(5,10,15,60,75, 100),
+            order=list(1,'desc')
+          ),
+          rownames = F
+)
+
+```
+
+### Column Specs
+
+A quick note before talking about column specifications - a really confusing part of Data Tables is that when you're specifying column attributes, it relies on column position rather than column name. And when the row names are included, the row name is considered column zero. If you take the row names option away, then Data Tables kind of shifts everything to the left and the first column referenced is 0 (whereas before it was one). It takes some experimentation (and patience).
+
+```{r}
+datatable(std_tbl,
+          options = list(
+            pageLength=5,
+            lengthMenu=c(5,10,15,60),
+            order=list(1,'desc'),
+            columnDefs=list(
+              list(className='dt-right',targets=1:2),
+              # ,
+              list(visible=FALSE,targets=3)
+            )
+          ),
+          rownames = F
+)
+
+```
+
+### Add dom and column names
+
+```{r}
+datatable(std_tbl,
+          options = list(
+            pageLength=5,
+            lengthMenu=c(5,10,15,60),
+            order=list(1,'desc'),
+            columnDefs=list(
+              list(className='dt-center',targets=1:3)
+              # ,
+              # list(visible=FALSE,targets=3)
+            ),
+            dom = 'ltp'
+          ),
+          rownames=FALSE,
+          colnames=c("County","Chlamydia rate","Early syphilis rate per 100k","Gonorrhea rate per 100k")
+)
+
+
+```
+
+### Buttons
+
+```{r}
+datatable(std_tbl,
+          extensions = 'Buttons',
+          options = list(
+            pageLength=5,
+            lengthMenu=c(5,10,15,60),
+            order=list(1,'desc'),
+            columnDefs=list(
+              list(className='dt-center',targets=1:3)
+              # ,
+              # list(visible=FALSE,targets=3)
+            ),
+            dom = 'Blftp',
+            buttons = c('copy', 'csv', 'excel', 'pdf')
+          ),
+          rownames=FALSE,
+          colnames=c("County","Chlamydia rate","Early syphilis rate per 100k","Gonorrhea rate")
+)
+
+
+
+```
+
+### Edit-able tables
+
+```{r}
+datatable(std_tbl,
+          options = list(
+            pageLength=5,
+            lengthMenu=c(5,10,15,60),
+            order=list(1,'desc'),
+            columnDefs=list(
+              list(className='dt-center',targets=1:3)
+              # ,
+              # list(visible=FALSE,targets=3)
+            ),
+            dom = 'ltip'
+          ),
+          rownames=FALSE,
+          colnames=c("County","Chlamydia rate","Early syphilis rate","Gonorrhea rate"),
+          filter="top",
+          # editable=T,
+          editable=list(target='cell',disable=list(columns=0))
+          ) 
+```
+
+### Colors and style
+
+```{r}
+datatable(std_tbl,
+          options = list(
+            pageLength=5,
+            lengthMenu=c(5,10,15,60),
+            order=list(1,'desc'),
+            columnDefs=list(
+              list(className='dt-center',targets=1:3)
+              # ,
+              # list(visible=FALSE,targets=3)
+            ),
+            dom = 'ltip'
+          ),
+          rownames=FALSE,
+          colnames=c("County","Chlamydia rate","Early syphilis rate","Gonorrhea rate"),
+          filter="top",
+          # editable=T,
+          editable=list(target='cell',disable=list(columns=1:3))
+          ) %>%
+          formatRound(2:4,0) %>%
+          formatStyle(1,color="orange") %>%
+          formatStyle(2:4,backgroundColor = styleInterval(c(700),c('white','yellow')))
+
+
+```
+
+
+## formattable
+
+Another option for creating styled or formatted tables in R is using the formattable package for HTML output. The syntax is a little different than other table functions or packages we've talked about so far. People have different opinions on which is easier, but some of the features include:
+
+-   Built-in functions that make formatting easy,
+-   Flexibility to create new formatting functions,
+-   Add in symbols like stars, arrows, plus or minus signs, checkmarks, or Xs
+-   Conditional formatting
+
+Here's a [guide on some of the formattable options](https://help.displayr.com/hc/en-us/articles/360003170855-How-to-Format-Areas-of-a-Table-Using-the-Formattable-R-Package) and the [standard documentation](https://www.rdocumentation.org/packages/formattable/versions/0.2.1).
+
+![](images/formattable_options.png)
+
+```{r}
+#| echo: false
+
+# create a dataset for formattable
+std_tbl2 <- read_csv(filepath) %>%
+  filter(County!="California" & Year>=2017 & Sex=="Total" & Disease=="Chlamydia") %>%
+  select(County,Year,Rate,Cases) %>%
+  pivot_wider(names_from=c(Year),names_sep=" ",values_from=c(Rate,Cases)) %>%
+  mutate(`Rate % Change`=round((`Rate 2018`-`Rate 2017`)/`Rate 2017`,3)) %>%
+  mutate(`Cases % Change`=round((`Cases 2018`-`Cases 2017`)/`Cases 2017`,3)) %>%
+  select(County, `Cases 2017`,`Cases 2018`,`Cases % Change`,`Rate 2017`,`Rate 2018`,`Rate % Change` )
+
+```
+
+
+### Simple formattable
+
+```{r}
+formattable(std_tbl2)
+```
+
+### Align options
+
+```{r}
+
+formattable(std_tbl2,
+            align=c("l",rep("r",NCOL(std_tbl2)-1))
+            )
+
+
+```
+
+### Add format function
+
+```{r}
+
+#create a format function to use below
+above_avg_bold <- formatter("span", 
+                            style = ~style(font.weight=ifelse(`Cases 2017`>100  ,"bold","normal")))
+
+above_avg_bold
+formattable(std_tbl2,
+            align=c("l",rep("r",NCOL(std_tbl2)-1)),
+            list(
+              `County`=formatter("span",style= ~style(color="grey",font.weight="bold")),
+              `Cases 2017`= above_avg_bold
+            )
+            )
+
+```
+
+### Add colored bars
+
+```{r}
+
+#create a format function to use below
+above_avg_bold <- formatter("span", style = ~style(font.weight=ifelse(`Cases 2017`>100,"bold","normal")))
+
+formattable(std_tbl2,
+            align=c("l",rep("r",NCOL(std_tbl2)-1)),
+            list(
+              `County`=formatter("span",style= ~style(color="grey",font.weight="bold")),
+              #`Cases 2017`= above_avg_bold,
+              area(col=c(2:3)) ~ color_bar("lightgreen"),
+              area(col=c(5:6)) ~ color_tile("transparent","pink")
+              )
+            )
+
+```
+
+### Add conditional colors
+
+```{r}
+
+#create a format function to use below
+#above_avg_bold <- formatter("span", style = ~style(font.weight=ifelse(`Cases 2017`>100,"bold","normal")))
+
+
+formattable(std_tbl2,
+            align=c("l",rep("r",NCOL(std_tbl2)-1)),
+            list(
+              `County`=formatter("span",style= ~style(color="grey",font.weight="bold")),
+              `Cases 2017`= above_avg_bold,
+              #area(col=c(2:3)) ~ color_bar("lightgreen"),
+              area(col=c(5:6)) ~ color_tile("transparent","pink"),
+              `Cases % Change` = formatter("span", 
+                                           style= ~ style(color=ifelse(`Cases % Change`>=0,"red","green")),
+                                           ~icontext(ifelse(`Cases % Change`>=0,"arrow-up","arrow-down"),
+                                                     percent(`Cases % Change`,digits=1))),
+              `Rate % Change` = formatter("span", 
+                                           style= ~ style(color=ifelse(`Rate % Change`>=0,"red","green")),
+                                           ~icontext(ifelse(`Rate % Change`>=0,"arrow-up","arrow-down"),
+                                                     percent(`Rate % Change`,digits=1)))
+            ))
+
+```
+
+## Combine DT and formattable
+
+```{r}
+#try to combine datatable and formattable - notice that it works and we gain some DT features
+#but we lose some of the formatting
+
+as.datatable(formattable(std_tbl2,
+            align=c("l",rep("r",NCOL(std_tbl2)-1)),
+            list(
+              `County`=formatter("span",style= ~style(color="grey",font.weight="bold")),
+              # `Cases 2017`=above_avg_bold,
+              area(col=c(2:3)) ~ color_bar("lightgreen"),
+              area(col=c(5:6)) ~ color_tile("transparent","pink"),
+              `Cases % Change` = formatter("span", 
+                                           style= ~ style(color=ifelse(`Cases % Change`>=0,"red","green")),
+                                           ~icontext(ifelse(`Cases % Change`>=0,"arrow-up","arrow-down"),
+                                                     percent(`Cases % Change`,digits=1))),
+              `Rate % Change` = formatter("span", 
+                                           style= ~ style(color=ifelse(`Rate % Change`>=0,"red","green")),
+                                           ~icontext(ifelse(`Rate % Change`>=0,"arrow-up","arrow-down"),
+                                                     percent(`Rate % Change`,digits=1)))
+            ))
+) 
+```
+

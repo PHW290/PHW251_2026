@@ -1,0 +1,338 @@
+---
+title: "Tidying Data, Part 2: Grouping, Summarizing and Pivoting Data"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+# Overview
+
+Tidying (or manipulating) data
+
+-   Grouping
+
+    -   Grouped calculation
+
+-   Aggregate by group (summarize)
+
+    -   Entire data frame
+
+    -   By group
+
+-   Complex grouping and aggregating
+
+    -   Key aggregation functions
+
+    -   Multiple summarizes
+
+    -   Multiple group by's
+
+-   Pivoting (going from long to wide, or wide to long)
+
+## Objectives
+
+1.  Understand how to group and ungroup rows in a data frame
+2.  Identify methods for aggregating variables by groups
+3.  Understand complex applications for grouping and aggregating
+4.  Understand how to pivot data
+
+We are continuing our [`dplyr`](https://dplyr.tidyverse.org/) journey with these functions:
+
+-   `group_by()`
+
+-   `summarise()`
+
+-   `pivot_wider (tidyr)`
+
+-   `pivot_longer (tidyr)`
+
+Load the data and packages for this lesson.
+
+```{r, message=F, warning=F}
+library(palmerpenguins)
+library(dplyr)
+
+penguins <- penguins  # save dataframe from package into local environment
+
+str(penguins) # data we will use
+```
+
+## Grouping
+
+If we wanted to find out the count of each species in the penguins data, we could use a base R solution.
+
+```{r}
+table(penguins$species)
+```
+
+While this one line of code is powerful, we're limited to this vector output. Using `dplyr` we can start to chain statements together to complete complex analyses.
+
+Let's try grouping our data by using `group_by()`.
+
+```{r}
+
+penguins_small <- penguins %>% select(species) #create new dataframe that only includes the species column
+
+penguins_group <- penguins_small %>% group_by(species)
+penguins_group
+```
+
+As far as the table values goes, there's no perceivable difference. However, you can see in the data structure that we now have `Groups: species`. You can think of this group addition as if we've placed each of the species' rows into their own buckets.
+
+| Row | Species   | Bucket   |
+|-----|-----------|----------|
+| 1   | Adelie    | Bucket 1 |
+| 2   | Adelie    | Bucket 1 |
+| 3   | Chinstrap | Bucket 2 |
+| 4   | Chinstrap | Bucket 2 |
+| 5   | Chinstrap | Bucket 2 |
+| 6   | Gentoo    | Bucket 3 |
+| 7   | Gentoo    | Bucket 3 |
+
+(If you're wondering what the \[3\] represents, it's to signify how many groups are currently printed, which is Adelie, Chinstrap, Gentoo.)
+
+### Grouped calculation
+
+With grouped data you can calculate new values based on the rows in a given group.
+
+| Row | Species   | Bucket   | New Value             |
+|-----|-----------|----------|-----------------------|
+| 1   | Adelie    | Bucket 1 | Based on rows 1, 2    |
+| 2   | Adelie    | Bucket 1 | Based on rows 1, 2    |
+| 3   | Chinstrap | Bucket 2 | Based on rows 3, 4, 5 |
+| 4   | Chinstrap | Bucket 2 | Based on rows 3, 4, 5 |
+| 5   | Chinstrap | Bucket 2 | Based on rows 3, 4, 5 |
+| 6   | Gentoo    | Bucket 3 | Based on rows 6, 7    |
+| 7   | Gentoo    | Bucket 3 | Based on rows 6, 7    |
+
+Now let's calculate a new field to get our species counts.
+
+```{r}
+penguins_group_count <- penguins_small %>%
+  group_by(species) %>%  # group by species
+  mutate(count = n())    # count the number of rows within a given group
+
+penguins_group_count
+```
+
+We still have all our rows, but now the new column `count` has the corresponding group's total row count. We can make this easier to review by using `unique()` to find unique rows.
+
+```{r}
+penguins_group_count <- penguins_group_count %>% unique()
+penguins_group_count
+```
+
+As you can see, we've matched the values from when we used `table(penguins$species)`.
+
+It's **best practice** to `ungroup()` once you are done with your calculations, as a grouped data frame can cause issues when you aren't aware. For example, you may end up erroneously calculating by grouped rows when you want to calculate based on the entire data frame.
+
+```{r}
+penguins_group_count <- penguins_group_count %>% ungroup()
+penguins_group_count
+```
+
+## Aggregating
+
+**Aggregating** is the process of combining multiple values into a single value. Unlike our count column where we kept *all* of the rows in the data, aggregating will result in a single cell for a given group.
+
+### Key aggregation functions
+
+There are a few key functions for aggregating data when using `summarize()`.
+
+-   Central tendency: `mean()`, `median()`
+
+-   Spread: `sd()`, `IQR()`
+
+-   Count / Sum: `n()`, `n_distinct()`, `sum()`
+
+-   Range: `min()`, `max()`
+
+-   Position: `first()`, `last()`, `nth()`
+
+For most of these functions, the option to remove NA values with `na.rm = TRUE` will often clear errors, **but it's up to you to know when removing NAs from data is the right choice**.
+
+### Entire data frame
+
+Imagine we had a table of 5 rows and wanted to calculate the mean value.
+
+| Species   | Value |
+|-----------|-------|
+| Adelie    | 3     |
+| Adelie    | 5     |
+| Chinstrap | 3     |
+| Chinstrap | 1     |
+| Gentoo    | 5     |
+
+When we aggregate the entire data frame, we're ignoring the Species column / group, resulting in a table of one column and row.
+
+| Mean |
+|------|
+| 3    |
+
+We can aggregate an entire data frame to find the mean bill length (mm). To aggregate with `dplyr` you use `summarize()`. The syntax is similar to `mutate()` where the left side of the equation is the new variable and the right side is the calculation.
+
+```{r}
+penguins %>% 
+  summarize(mean_bill_length = mean(bill_length_mm, na.rm = TRUE)) # new var = calculation
+```
+
+### By group
+
+Whereas by group, we will end up with as many rows as there is groups. Taking the same table we used to calculate the mean, we end up with the following.
+
+| Species   | Mean |
+|-----------|------|
+| Adelie    | 3    |
+| Chinstrap | 3    |
+| Gentoo    | 5    |
+
+Let's re-create our original count table but without using `unique()`.
+
+```{r}
+penguins %>%
+  group_by(species) %>%
+  summarize(count = n()) %>%
+  ungroup()
+```
+
+## Complex grouping and aggregating
+
+### Multiple summarizes
+
+With `summarize()`, similar to `mutate()`, you can create as many new columns as you want. Let's showcase a few of these key aggregation functions.
+
+```{r}
+penguins %>%
+  group_by(species) %>%
+  summarize(mean_bill_length   = mean(bill_length_mm, na.rm = TRUE),
+            median_bill_length = median(bill_length_mm, na.rm = TRUE),
+            sd_bill_length     = sd(bill_length_mm, na.rm = TRUE),
+            min_bill_length    = min(bill_length_mm, na.rm = TRUE),
+            max_bill_length    = max(bill_length_mm, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+
+### Multiple group by's
+
+You can also group by multiple variables allowing for even more complex calculations.
+
+```{r, message=F}
+
+penguins %>%
+  filter(!is.na(sex)) %>% # let's remove NAs
+  group_by(species, sex) %>%
+  summarize(mean_bill_length   = mean(bill_length_mm, na.rm = TRUE),
+            median_bill_length = median(bill_length_mm, na.rm = TRUE),
+            sd_bill_length     = sd(bill_length_mm, na.rm = TRUE),
+            min_bill_length    = min(bill_length_mm, na.rm = TRUE),
+            max_bill_length    = max(bill_length_mm, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+
+## Pivoting
+
+[Pivot longer documentation](https://tidyr.tidyverse.org/reference/pivot_longer.html)
+
+[Pivot wider documentation](https://tidyr.tidyverse.org/reference/pivot_wider.html)
+
+Pivoting is the reshaping of data between long and wide formats.
+
+```{r, message=F, warning=F}
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(stringr)
+
+# load our data (CA populations by year and county, from CA Dept of Finance)
+demog_2010_20 <- fread("data/DOFP3_2010_2020_demo.csv")
+head(demog_2010_20)
+```
+
+Our data is currently in **long format** where each row is a unique observation per county. Each county has multiple rows of data. We can transform this data into **wide format** where each county's observations are all in a single row with the different types of data in a separate column.
+
+Turning long data into wide data is possible with `pivot_wider()`.
+
+```{r}
+demog_wide <- demog_2010_20 %>%
+  pivot_wider(
+    names_from = "year",    # look for values within the `year` column
+    names_prefix = "year_", # name new columns with the `year_` prefix
+    values_from = dof_pop)  # pull values from the `dof_pop` column
+
+demog_wide
+```
+
+We can turn a wide data frame into a long with `pivot_longer()` which has similar parameters.
+
+```{r}
+demog_long <- demog_wide %>%
+  pivot_longer(
+    # cols = starts_with("year_"), # columns to pivot into longer format
+    cols = year_2010:year_2020,
+    names_to = "year",           # new column to create from the data in `cols`
+    values_to = "dof_pop",       # new column to create from the data stored in the cell values
+    names_prefix = "year_")      # regular expression to remove matching text from column names
+
+demog_long
+```
+
+**Note:** it is a best practice to do any desired sub-setting or filtering of your data frame before pivoting. For example, if you only wanted population data for years 2018-2020, you could add a filter before the pivot_wider.
+
+```{r}
+demog_wide_recent <- demog_2010_20 %>%
+  filter(year>=2018) %>%  # only include data for years 2018, 2019, 2020
+  pivot_wider(
+    names_from = "year",    # look for values within the `year` column
+    names_prefix = "year_", # name new columns with the `year_` prefix
+    values_from = dof_pop)  # pull values from the `dof_pop` column
+
+demog_wide_recent
+```
+
+Here's a more complex example where we group by and summarize before pivoting wider.
+
+```{r, warning=F, message=F}
+# load data
+oshpd_payers <- fread("data/inpatient_payer_ca.csv") %>%
+  rename_all(. %>% tolower %>% gsub(" ", "_", .) %>% gsub("/", "_", .)) %>%
+  mutate(county_name = str_to_title(county_name)) %>%
+  as_tibble()
+
+head(oshpd_payers)
+
+#we want the number of inpatient stays ("count" column) per county and year in a wide format (one column per year)
+oshpd_wide <- oshpd_payers %>%
+  group_by(county_name, year) %>%
+  summarize(pt_count = sum(count, na.rm=TRUE)) %>%
+  pivot_wider(names_from = year, 
+              values_from = pt_count, 
+              names_prefix = "year_")
+
+oshpd_wide
+```
+
+An even more complex example where we join our two data frames, group by, summarize, calculate a new column and then widen!
+
+```{r, warning=F, message=F}
+#we want a table that shows the inpatient stays per capita per year for each county
+osphd_visits_year <- oshpd_payers %>%
+  filter(year>2009, !is.na(count)) %>%
+  group_by(county_name, year) %>%
+  summarize(total_stays = sum(count)) %>%
+  ungroup() %>%
+  left_join(., demog_2010_20, by=c("county_name" = "county", "year" = "year")) %>%
+  mutate(stays_per_capita = total_stays / dof_pop) %>%
+  select(county_name, year, stays_per_capita) %>%
+  pivot_wider(names_from = year, values_from = stays_per_capita, names_prefix = "year_")
+
+osphd_visits_year
+```

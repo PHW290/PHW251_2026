@@ -1,0 +1,119 @@
+---
+title: "R and RStudio Basics"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## What is R?
+
+R is a free software for data analysis, statistics, graphics, and more. It is open-source, which means that users can expand the functionality of R through add-ons called packages. R is used a lot for data science and public health due to it's capabilities, flexibility, and being somewhat more user-friendly than a lot of other programming software.
+
+## What is R Studio?
+
+R Studio is a free user interface for using R. It adds a lot of functionality and is easier to use than the built in R interface. What this means is that you will write R code in R Studio -- you don't ever really need to open "R". You may also see R Studio referred to as Posit. This is the same thing, R Studio is just in the process of being re-branded due to expanded functionality beyond just using R.
+
+![](images/R_vs_RStudio.png){fig-align="center"}
+
+## Using R Studio in the Datahub
+
+Datahub is a tool that allows you to run R Studio in a standardized, common, cloud computing environment. We recommend using the Datahub in most cases, instead of installing the software on your own computer (at least while you are getting started!).
+
+1.  To access the Public Health Datahub, please use the link on the Datahub tab within the course bCourses site. This link will automatically sync to provide the most updated course material. *Note: there are other Datahubs at UC Berkeley, however the setup is slightly different. Please use the one linked on bCourses.*
+2.  Sign in with bCourses, if prompted (you may not be prompted to since you are already within bCourses). You will need to click "Authorize" to allow Datahub to connect to your bCourses account.
+
+![](images/datahub.png){fig-align="center"}
+
+3.  You may get a message saying "Your server is starting up". This should finish loading within 30 seconds or less.
+4.  You are now logged in and ready to start using R Studio! Your window should look something like this:
+
+![](images/datahub2.png){fig-align="center"}
+
+## R Studio Setup
+
+You will notice that there are different panes in R Studio. It's good to become familiar with what is shown in each of these areas.
+
+![](images/RStudio_setup.png){fig-align="center"}
+
+-   **Source code (top left panel)**: This is where where you will open code files that you can re-run. This will not open by default. We recommend writing your code in a savable script any time you will want to re-run something, or want to reference back. For the case of learning, and this course, we highly recommend storing all of your code in a file.
+
+-   **Console (bottom left panel):** The console has a a few functions, including:
+
+    -   Directly type and run code (what is seen in blue)
+
+    -   View objects (what is seen in black)
+
+    -   See Warnings, Errors, or System Messages (which typically show up in red)
+
+-   **Environment (top right panel)**: The environment shows you any objects created within a session. There are other tabs in this pane too, but you can learn more about these later.
+
+-   **Files and Packages (bottom right panel):** The "Files" tab allows for navigation to folders and files within projects or connected locations. The "Packages" tab is where packages can be viewed or installed.
+
+## Source Code Types
+
+There are a few different source code file types that you may see in this class and elsewhere as you start using R. The main file types are:
+
+-   R script files: These end in "**.R".** This is the most basic way to save your code in R to be able to run it again.
+
+-   R markdown files: These end in "**.Rmd**". These files allow you to combine your code, documentation of the code (text), and output all in the same document. You can then "knit" R markdown documents to create PDF, HTML, or other files as output.
+
+-   Quarto files: These end in "**.Qmd**". These are similar to R markdown documents, but have a few more features. One especially helpful feature is that there is a visual editor, which functions much more like a normal word processing program. You can then "render" quarto documents to create PDF, HTML, or other files as output.
+
+We will go into these files types in more depth later in the course.
+
+## File Management
+
+### Accessing course files
+
+In the bottom right pane of R Studio on the Datahub, in the "Files" tab, you will see automatically see a folder called "PHW251_Fall2023". The course materials will show up in this folder. The instructional team saves the course materials on GitHub (we will discuss this more later), and these course materials will automatically show up in Datahub for you.
+
+### Saving your work
+
+The files in the PHW251_Fall2023 folder on datahub will be updated whenever the instructional team adds new files or makes edits to existing files. In order to save changes to code in this folder, we recommend either saving the file with a new name (appending your name to the end of the file name), or creating a copy in a different folder.
+
+To save a copy of an open code source file with a new name:
+
+1.  File \> save as
+
+2.  Edit the name and click save
+
+### Referencing other files
+
+For programming, the path to get to files that you need matters. For example, if you want to load data you need to tell R where that data is stored. The easiest way to do this is to create an R Project. This tells R where to reference files if you have the project open, so you don't have to specify long file paths.
+
+**To create a new project in an existing folder:**
+
+1.  Click the down arrow by "Projects:" in the top right corner.
+
+2.  Select "New Project".
+
+3.  In the window that pops up, select "Existing Directory".
+
+![](images/create_project.png){fig-align="center"}
+
+4.  In the next window, click "browse" and navigate to the folder that you want to create the project in. For example, maybe you want to create an R project for the weekly materials. In this case, you would navigate to the existing folder "weekly_material" within the PHW251_Fall2023 folder, and select that. 5. Once you've selected the folder, click "choose" and then "create project".
+
+Now, when this project is open, you will be able to reference other files in the folder without specifying the entire file path leading up to the file name. For example, I can now run this code to load an example data set in a folder named "data" within the "weekly_material" folder.
+
+```{r}
+
+data <- read.csv("./data/sample_data.csv")
+
+```
+
+If I hadn't created a project, I would have to reference a much longer file path to load the data. Especially when you are working with others and/or using the Datahub, R Projects simplifies the process a lot.
+
+**To open an existing project:**
+
+1.  Click the down arrow by "Projects:" in the top right corner.
+
+2.  Select "Open Project"
+
+3.  Navigate to the folder where the R Project is located, and select the "**.Rproj**" file, and click "Open".

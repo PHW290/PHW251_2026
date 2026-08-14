@@ -1,0 +1,50 @@
+﻿date,city,state,intervention,gender,orientation,outcome
+25/05/2018,atlanta,GA,1,-999,heterosexual,10
+25/05/2018,Atlanta,gA,1,-999,heterosexual,6
+25/05/2018,atlAnTa,TX,2,female,lesbian/gay woman,3
+25/02/2019,San Antonio,TX,1,-1,heterosexual,9
+25/02/2019,austin,tX,2,male,heterosexual,1
+25/03/2018,oakland,ca,2,male,heterosexual,2
+25/03/2018,oakland,ca,2,female,heterosexual,
+25/03/2018,Hayward,CA,,,heterosexual,4
+25/03/2018,hayward,GA,1,male,gay,9
+25/03/2018,hayward,TX,1,female,heterosexual,10
+25/05/2018,atlanta,,1,female,-999,6
+25/05/2018,atlanta,ga,,male,heterosexual,3
+25/03/2018,oakland,,1,male,heterosexual,7
+25/02/2019,san Antonio,TX,1,male,heterosexual,9
+25/02/2019,san Antonio,tx,1,male,-1,7
+25/05/2018,atlanta,GA,2,female,heterosexual,6
+25/05/2018,Atlanta,gA,1,male,heterosexual,10
+25/05/2018,atlAnTa,TX,2,male,heterosexual,2
+25/02/2019,San Antonio,TX,1,female,heterosexual,
+25/02/2019,austin,tX,,-1,heterosexual,1
+25/03/2018,oakland,ca,2,female,heterosexual,2
+25/03/2018,oakland,ca,2,male,NA,1
+25/03/2018,Hayward,C A,1,female,NA,6
+25/03/2018,hayward,G A,1,female,heterosexual,6
+25/03/2018,hayward,TX,1,,gay,8
+25/05/2018,atlanta,,1,,heterosexual,9
+25/03/2018,atlanta,ga,2,male,heterosexual,3
+25/03/2018,oakland,,,female,heterosexual,2
+25/02/2019,san Antonio,TX,1,female,NA,10
+25/02/2019,san Antonio,tx,1,male,heterosexual,6
+25/03/2018,atlanta,GA,,female,heterosexual,5
+25/05/2018,Atlanta,gA,1,male,heterosexual,6
+25/05/2018,atlAnTa,TX,2,male,heterosexual,4
+25/02/2019,San Antonio,TX,,male,,4
+25/02/2019,austin,tX,2,female,heterosexual,6
+25/03/2018,oakland,ca,,female,heterosexual,4
+25/03/2018,iakland,ca,,,heterosexual,6
+25/03/2018,Hayward,CA,1,male,heterosexual,
+25/03/2018,atlanta,CA,1,female,heterosexual,7
+25/03/2018,hayward,TX,2,female,heterosexual,5
+25/05/2018,atlanta,,2,-999,heterosexual,
+25/05/2018,atlanta,ga,2,-999,heterosexual,3
+25/03/2018,oakland,,,male,heterosexual,
+25/02/2019,san Antonio,TX,,female,heterosexual,3
+25/02/2019,san Antonio,tx,,-1,heterosexual,
+25/03/2018,austin,ca,2,male,heterosexual,3
+25/03/2018,oakland,ca,2,female,other,3
+25/03/2018,Haywarf,CA,1,female,heterosexual,
+25/03/2018,hayward,CA_,1,male,heterosexual,9

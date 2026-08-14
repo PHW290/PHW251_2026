@@ -1,0 +1,394 @@
+---
+title: "Data Frames"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Overview
+
+-   Review: How data is stored in R
+
+-   Introduction to data frames and tibbles
+
+    -   Creating data frames
+
+    -   Modifying data frames
+
+    -   Exploring data frames
+
+    -   Tibbles
+
+## Objectives
+
+1.  Understand default data storage in R (data frames)
+2.  Create a data frame from scratch
+3.  Utilize functions available for exploring your data frame
+4.  Index and extract elements from data frames in base R
+5.  Add rows and columns to data frames using base R
+6.  Understand difference between data frames and tibbles
+7.  Access built-in data frames
+
+## Review
+
+![](data_frames_files/images/data_storage_overview.jpg){fig-align="center"}
+
+## Data Frames
+
+![](data_frames_files/images/data_frames_overview.jpg)
+
+### Creating a data frame using data.frame()
+
+Let's create our first data frame from scratch. We will create four county's testing data with the following variables / columns:
+
+1.  county
+2.  total tests
+3.  positive tests
+
+data.frame() has two main parts: (1) including vectors of equal length and (2) options for how to format the data frame. You can read more details about the function design and options by running the following code:
+
+```{r, eval=F}
+?data.frame
+```
+
+Let's first create our three vectors of length four. *Note*: The length corresponds to the number of rows. We have four counties and therefore four rows.
+
+```{r, eval=F}
+c("Alameda", "Contra Costa", "Marin", "Mendocino")
+c(500, 745, 832, 301)
+c(43, 32, 30, 25) 
+```
+
+We can plug these values directly into our data.frame() call and assign the output to an object called `testing`. On the left side of the equal sign is our **column name,** while on the right side is the **value** we are assigning.
+
+```{r}
+testing <- data.frame(
+  county = c("Alameda", "Contra Costa", "Marin", "Mendocino"),    
+  total_tests = c(500, 745, 832, 301), 
+  pos_tests = c(43, 32, 30, 25)   
+)
+
+# testing_list <- list(
+#   county = c("Alameda", "Contra Costa", "Marin", "Mendocino"),    
+#   total_tests = c(500, 745, 832, 301), 
+#   pos_tests = c(43, 32, 30, 25)   
+# )
+
+testing # calling our object to output the results
+```
+
+Pretty neat, right?!
+
+Open the `testing` data frame from the environment tab. Do you see the row names on the left-hand side? We can make the row names more clear than 1 through 4. Let's change the row names to correspond to the row's county by using an option of `data.frame()`: row.names.
+
+```{r}
+testing_rownames <- data.frame(
+  county = c("Alameda", "Contra Costa", "Marin", "Mendocino"),    
+  total_tests = c(500, 745, 832, 301), 
+  pos_tests = c(43, 32, 30, 25),
+  row.names = "county" # specifying the row name to use the `county` column
+)
+
+testing_rownames 
+```
+
+## Exploring data frames in R
+
+### Useful functions
+
+Now that we have our data frame, let's walk through a few useful functions for exploring our `testing` data.
+
++-------------+--------------------------+-------------------------------------------------------------------+
+| Function    | Returns                  | Example                                                           |
++=============+==========================+===================================================================+
+| nrow()      | \# of rows               | 4                                                                 |
++-------------+--------------------------+-------------------------------------------------------------------+
+| ncol()      | \# of columns            | 3                                                                 |
++-------------+--------------------------+-------------------------------------------------------------------+
+| dim()       | Dimensions (row columns) | 4 3                                                               |
++-------------+--------------------------+-------------------------------------------------------------------+
+| names()     | Column names             | "county" "total_tests" "pos_tests"                                |
++-------------+--------------------------+-------------------------------------------------------------------+
+| rownames()  | Row names                | "1" "2" "3" "4"                                                   |
++-------------+--------------------------+-------------------------------------------------------------------+
+| typeof()    | Type of object           | "list"                                                            |
++-------------+--------------------------+-------------------------------------------------------------------+
+| class()     | Class                    | "data.frame"                                                      |
++-------------+--------------------------+-------------------------------------------------------------------+
+| str()       | Structure                | ```                                                               |
+|             |                          | 'data.frame':   4 obs. of  3 variables:                           |
+|             |                          |  $ county     : chr  "Alameda" "Contra Costa" "Marin" "Mendocino" |
+|             |                          |  $ total_tests: num  500 745 832 301                              |
+|             |                          |  $ pos_tests  : num  52 61 89 100                                 |
+|             |                          | ```                                                               |
++-------------+--------------------------+-------------------------------------------------------------------+
+
+```{r, eval=F}
+# try them out!
+nrow(testing)
+ncol(testing)
+dim(testing)
+names(testing)
+rownames(testing) 
+rownames(testing_rownames) # check out the difference!
+typeof(testing)
+class(testing)
+str(testing)
+```
+
+### Summary, table, plot
+
+
+#### summary()
+
+```{r}
+summary(testing)
+```
+
+#### table()
+
+```{r}
+table(testing$total_tests)
+```
+
+#### plot()
+
+```{r}
+plot(testing$total_tests, testing$pos_tests)
+```
+
+
+## Indexing & extracting using Base R
+
+![](data_frames_files/images/indexing_extracting_overview.jpg){fig-align="center"}
+
+
+
+### Indexing
+
+As you can see, there are several ways to explore a data frame. Let's see the different ways we can pull out the counties in our data. In general, there is no one "right" way, but you may find yourself using these different methods at some point.
+
+```{r}
+testing[["county"]]
+testing[[1]] # the first column's index is 1
+testing$county
+```
+
+### Extracting
+
+Pulling the column vector out of the data frame and assigning to a new object.
+
+```{r}
+county_vector <- testing[["county"]]
+county_vector
+```
+
+Outputting a data frame of the counties column.
+
+```{r}
+county_df <- testing["county"]
+county_df
+
+county_df2 <- testing[1]
+county_df2
+```
+
+Subsetting based on the column name or index.
+
+```{r}
+testing[ , c("total_tests","pos_tests")] # by name
+testing[, c(2,3)] # by index
+```
+
+Subsetting based on the row number.
+
+```{r}
+testing[c(1, 3), ] # rows 1 and 3
+```
+
+
+Subsetting based on the row AND column number.
+
+```{r}
+testing[c(1, 3), c(2,3)] # rows 1 and 3 with columns 2 and 3
+```
+
+
+### Reassigning
+
+What if we needed to fix a value in a data frame? We can do that with reassignment.
+
+Here's an example of modifying Contra Costa to Yolo. We are modifying the cell value of row 2 and column 1: \[2, 1\]
+
+```{r}
+testing[2, 1] <- "Yolo"
+testing
+```
+
+Update the positive tests.
+
+```{r}
+testing$pos_tests <- c(52, 61, 89, 100)
+testing
+```
+
+
+## Modifying data frames (in base R)
+
+
+### Rows
+
+We just received new testing data from Lassen County and want to add to the `testing` data frame. Let's create a list object because a list allows for *different* types of data. We'll then combine the list with our `testing` data frame using `rbind()`.
+
+```{r}
+# create our lassen list object
+lassen <- list("Lassen", 1200, 73)
+
+# combine the data frame with the list
+# note: since we're reassigning `testing` we are overwriting the previous object's data
+testing <- rbind(testing, lassen)
+
+testing
+```
+
+We can also row bind with two data frames.
+
+```{r}
+# create our second testing data frame
+testing2 <- data.frame(
+  county = c("Imperial", "Riverside"),
+  total_tests = c(410, 760),
+  pos_tests = c(84, 57)
+)
+
+# combine the two data frames
+testing <- rbind(testing, testing2)
+testing
+```
+
+### Columns
+
+Let's add another column `id`. We can create a vector called `id` and use `cbind()` to column bind the vector to the data frame.
+
+```{r}
+id <- 1:7
+cbind(testing, id)
+```
+
+We can also directly add a column to the data frame.
+
+```{r}
+testing$id <- 1:7
+testing
+```
+
+What if we wanted to calculate another column based on other columns? We can calculate percent positivity with the following formula: `100 * positive tests / total test`.
+
+```{r}
+testing$pct_pos <- round(100 * testing$pos_tests / testing$total_tests, 1)
+testing
+```
+
+### Restructuring
+
+Sometimes we need to modify our data frames by re-ordering or removing columns and rows.
+
+We can re-order columns by column indexes.
+
+```{r}
+# note that we have 5 columns
+# let's change the order to: id, county, pos_test, total_test, pct_pos
+testing <- testing[, c(4, 1, 3, 2, 5)] 
+testing
+```
+
+We can also re-order based on values in a specified column, such as by ordering by county alphabetically.
+
+```{r}
+testing <- testing[order(testing$county), ]
+testing
+```
+
+Similarly, we can remove columns by index.
+
+```{r}
+testing[, c(1, 3, 4, 5)] # removing county
+```
+
+A shorthand way to remove by index is by "subtracting" or placing "-" before the column index
+
+```{r}
+testing[, c(-2)]
+```
+
+
+## Tibbles (tidyverse)
+
+Tibbles are the modern data frame and are a core feature of the tidyverse packages. Tibbles were created to improve flexibility:
+
+-   Removed row names
+
+-   Allow for spaces within column names
+
+-   Allow for column names to start with special characters
+
+-   Can handle vector of length 1 by automatically assigning the value to all rows
+
+-   Can reference columns within a tibble easily
+
+-   Improved readability when outputting to the console
+
+Creating a tibble is similar to a data frame, but notice how we can:
+
+1.  Assign "CA" to all rows of the state column
+2.  Create a variable Percent Positive Tests that has spaces in the name
+3.  Reference pos_tests and total_tests before these variables are created
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+testing_tib <- tibble(
+  county = c("Alameda", "Contra Costa", "Marin"),
+  state = "CA", # assigning one value across all rows
+  total_tests = c(500, 745, 832),
+  pos_tests = c(43, 32, 30),
+  `Percent Positive Tests` = round(100 * pos_tests / total_tests, 1) # spaces in column name & can reference other columns before creating
+)
+
+testing_tib
+```
+
+## Built in data
+
+As you're learning R, it's helpful to use built in data rather than creating your own from scratch.
+
+```{r, eval=F}
+# to see built in data
+data()
+
+# to load one of these datasets, such as admissions to UC Berkeley
+data("UCBAdmissions")
+
+UCBAdmissions
+
+UCBAdmissions_df <- as.data.frame(UCBAdmissions)
+
+```
+
+You can also access data through packages.
+
+```{r, eval=F}
+# an example of a package that's popular for data exploration & visualization
+library(palmerpenguins)
+
+penguins_tib <- penguins
+```
+
+

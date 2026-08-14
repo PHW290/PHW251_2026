@@ -1,0 +1,127 @@
+---
+title: "R Markdown and Quarto"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r}
+#| echo: false
+#| output: false
+#| message: false
+
+if (!require("pacman")) install.packages("pacman")
+library(pacman)
+
+p_load(rmarkdown, ggplot2)
+
+```
+
+R markdown and quarto are ways to write your source code and combine it with text and the output of your code into a finished document. These types of documents can be really helpful for doing assignments, keeping track of your progress, documentation, reports, sharing your work with others, teaching, and more. Both R markdown and Quarto work by allowing you to write R code and markdown and then using this to write other code for you to create an output document.
+
+## R markdown vs. Quarto
+
+-   R markdown files: These end in "**.Rmd**". These files allow you to combine your code, documentation of the code (text), and output all in the same document. You can then "knit" R markdown documents to create PDF, HTML, or other files as output.
+
+    -   [R markdown cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+
+-   Quarto files: These end in "**.Qmd**". These are similar to R markdown documents, but have a few more features. You can then "render" quarto documents to create PDF, HTML, or other files as output -- and quarto files have more output options
+
+    -   [Quarto basics in the R for Data Science book](https://r4ds.hadley.nz/quarto.html)
+
+## Creating a new document
+
+To create a new R markdown or quarto file:
+
+1.  Click the new document button in the upper left.
+2.  Select the file type.
+3.  Fill in the information in the popup window. This will set some of the basic properties of the document for you.
+
+![](images/new_doc.png){fig-align="center"}
+
+4.  Remove or edit example text and code as needed.
+
+## YAML
+
+The YAML header that explains what type of document to build from your R Markdown file. You can also add details like a title, your name, and the date. The formatting of this header for R markdown is very similar, but has a few minor differences. The easiest ways to get started with writing the YAML header are:
+
+-   Follow the above steps for new document creation. This will create a basic YAML header for you.
+
+-   Copy an existing YAML header and edit information as needed.
+
+## Text formatting
+
+The examples below can be used for formatting both R markdown and quarto documents. You can look at the "source" editor to see how this formatting is done with code -- or you can use the "visual" editor to make many of these changes.
+
+# Header 1
+
+## Header 2
+
+### Header 3
+
+###### Header 6
+
+-   list
+
+-   list
+
+-   list
+
+    -   sub-list
+
+1.  number 1
+
+2.  number 2
+
+*italics*
+
+**bold**
+
+## Embedding code
+
+You can also embed code in your R markdown or quarto documents. How this looks and functions between the two document types is a bit different.
+
+Here is an example of adding code:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this:
+
+```{r}
+#| echo: false
+print("hello world")
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+You can also run code for plots and show the output in the document. Below we are just using some sample data in R to create a basic scatter plot.
+
+```{r}
+
+ggplot(cars, aes(x = speed, y = dist))+
+  geom_point()
+
+```
+
+## Embedding Images
+
+You can also embed images in R markdown and quarto document. You can do this using the source code (view source code here for example), or the visual editor. In this case, we've also added some code in the source code to center the image.
+
+![](images/quarto.jpeg){fig-align="center"}
+
+## Further resources
+
+There are a lot of resources online for further formatting and tools that you can use in these documents. In addition, it can be helpful to look at the source code for documents we've provided in the class.
+
+-   [R markdown cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+-   [Quarto basics in the R for Data Science book](https://r4ds.hadley.nz/quarto.html)
+-   [Quarto guide on the quarto website](https://quarto.org/docs/guide/)

@@ -1,0 +1,282 @@
+---
+title: "Unexpected Data: Detection & Correction" 
+subtitle: "Correcting Invalid Values" 
+format:    
+  html:     
+    smooth-scroll: true     
+    toc: true     
+    toc-location: left     
+    anchor-sections: true     
+    embed-resources: true     
+    link-external-icon: true     
+    link-external-newwindow: true 
+editor: visual
+---
+
+# Overview
+
+-   Handling or correcting unwanted / invalid data
+
+    -   Excluding
+
+    -   Recoding
+
+    -   Missing
+
+-   Corrections
+
+    -   Test Dates
+
+    -   Group
+
+    -   Total Tests
+
+    -   Positive Tests
+
+## Objective
+
+-   Identify methods for correcting issues
+
+## Corrections
+
+We've identified our issues, but now what do we do?? We'll first want to **evaluate** how to handle each invalid or unexpected value(s):
+
+-   Retain the value and use in analysis
+
+-   Exclude value / row
+
+-   Recode value to another value
+
+    -   Make a correction
+
+    -   Use another value
+
+    -   Imputation
+
+-   Set the value to missing
+
+When you're making your evaluation, consider the following order of operations for your corrections:
+
+1.  Import
+2.  Strata / grouping variables
+3.  Data feeding calculations
+4.  Calculated fields
+
+**Tip:** Set up table structure in an order to move from left to right for cleaning.
+
+Let's review some possible ways to handle the issues we have identified.
+
++----------------+----------------------------------+--------------------------------------------------------+
+| Field          | Issue                            | How to handle                                          |
++================+==================================+========================================================+
+| Test date      | -   Out of range and missing     | -   Filter out rows with dates before / after Aug 2020 |
++----------------+----------------------------------+--------------------------------------------------------+
+| Group          | -   Invalid group names; missing | -   Clean up names to be group 1 and 2                 |
+|                |                                  |                                                        |
+|                | -   Single record for group 3    | -   Remove group 3 and missing                         |
+|                |                                  |                                                        |
+|                | -   Change groups to city names  | -   Replace with city names                            |
++----------------+----------------------------------+--------------------------------------------------------+
+| Total tests    | -   "NA" vs NA; numeric          | -   Recode "NA" to be missing                          |
+|                |                                  |                                                        |
+|                | -   Outlier                      | -   Confirm total_tests is numeric                     |
+|                |                                  |                                                        |
+|                | -   Missing values               | -   Correct outlier to 450                             |
+|                |                                  |                                                        |
+|                |                                  | -   Change missing to 0                                |
++----------------+----------------------------------+--------------------------------------------------------+
+| Positive tests | -   Missing values               | -   Set values \> total tests to missing               |
+|                |                                  |                                                        |
+|                | -   Greater than total tests     | -   Change missing to 0                                |
++----------------+----------------------------------+--------------------------------------------------------+
+
+Let's start cleaning our dataset.
+
+Import and open table.
+
+```{r, warning=F, message=F}
+library(tidyverse)
+
+file_path <- "data/testing_example.xlsx"
+
+testing <- readxl::read_excel(
+  file_path
+)
+
+```
+
+### Test Dates
+
+-   Missing dates
+
+#### Method 1: `drop_na()`
+
+***Note:*** drop_na() will drop all rows with NA in any column, so use with caution. If you only want to drop rows with NA for certain columns you can specify in the call - ex: drop_na(test_date)
+
+```{r}
+testing_1a <- testing %>%
+  drop_na(test_date) 
+```
+
+#### Method 2: `filter()`
+
+```{r}
+testing_1b <- testing %>%
+  filter(!is.na(test_date))
+```
+
+-   Out of range
+
+#### Method: `filter()`
+
+```{r}
+testing_1c <- testing %>%
+  filter(test_date >= as_date("2020-08-01") & 
+         test_date <= as_date("2020-08-31"))
+```
+
+### Group
+
+-   invalid names remove missing
+-   remove group 3
+-   change groups to city names
+
+#### Method 1: `if_else()` / `case_when()` and `recode()`
+
+```{r}
+groups <- testing %>%
+  select(group) %>%
+  distinct() %>%
+  pull()
+
+groups
+
+testing_2a <- testing_1c %>%
+  mutate(group = case_when(
+    group %in% c("group 1","1","gp one","gp 1") ~ "G1",
+    group %in% c("group 2","Gp Two") ~ "G2",
+    TRUE ~ NA_character_
+  )) %>%
+  drop_na(group) %>%
+  mutate(group = recode(group, `G1`="San Diego", `G2`="Los Angeles"))
+```
+
+#### Method 2: `if_else()` / `case_when()`
+
+```{r}
+testing_2b <- testing_1c %>%
+   mutate(group = case_when(
+    group %in% c("group 1","1","gp one","gp 1") ~ "San Diego",
+    group %in% c("group 2","Gp Two") ~ "Los Angeles",
+    TRUE ~ NA_character_
+  )) %>%
+  drop_na(group) 
+```
+
+#### Method 3: `if_else()` / `case_when()` & `grepl()`
+
+```{r}
+testing_2c <- testing_1c %>%
+   mutate(group_cat = case_when(
+    grepl("1|one",group, ignore.case=TRUE) ~ "San Diego",
+    grepl("2|two",group, ignore.case=TRUE) ~ "Los Angeles",
+    TRUE ~ NA_character_
+  )) %>%
+  drop_na(group_cat)
+
+#same as code included in method 4
+testing_2d <- testing_1c %>%
+   mutate(group_cat = case_when(
+    str_detect(str_to_lower(group),"1|one") ~ "San Diego",
+    str_detect(str_to_lower(group),"2|two") ~ "Los Angeles",
+    TRUE ~ NA_character_
+  )) %>%
+  drop_na(group_cat)
+
+#confirm categories were created correctly
+table(testing_2c$group_cat,testing_2c$group)
+```
+
+#### Method 4: `if_else()` / `case_when()` & `str_detect()`
+
+```{r}
+testing_2d <- testing_1c %>%
+   mutate(group_cat = case_when(
+    str_detect(str_to_lower(group),"1|one") ~ "San Diego",
+    str_detect(str_to_lower(group),"2|two") ~ "Los Angeles",
+    TRUE ~ NA_character_
+  )) %>%
+  drop_na(group_cat)
+```
+
+### Total Tests
+
+-   `"NA"` instead of `NA`
+
+-   Confirm numeric
+
+#### Method 1: Handled at import
+
+```{r}
+# testing <- readxl::read_excel(
+#   file_path,
+#   na="NA"
+# )
+```
+
+#### Method 2: Handled in `mutate()`
+
+```{r}
+testing_3a <- testing_2c %>%
+  mutate(total_tests = na_if(total_tests,"NA"),
+         total_tests = as.numeric(total_tests))
+
+str(testing_3a)
+```
+
+-   Outlier
+
+-   Change missing values to 0
+
+#### Method: `mutate()`, `if_else()` using `row_number()` or other value
+
+```{r}
+testing_3b <- testing_3a %>%
+  mutate(total_tests = if_else(row_number() == 23, 450, total_tests)) %>%
+  replace_na(list(total_tests = 0))
+```
+
+### Positive Tests
+
+-   Greater than total tests to missing
+
+-   Change missing to 0
+
+#### Method 1: `replace_na()`
+
+```{r}
+testing_4a <- testing_3b %>%
+  mutate(pos_tests = if_else(pos_tests > total_tests, NA_real_, pos_tests)) %>%
+  replace_na(list(pos_tests=0, total_tests=0))
+```
+
+#### Method 2: Single `if_else()`
+
+```{r}
+testing_4b <- testing_3b %>%
+  mutate(pos_tests2 = if_else(pos_tests>total_tests | is.na(pos_tests), 0, pos_tests)) 
+```
+
+### Percent Positive
+
+Calculate percent positive and clean up if needed.
+
+```{r}
+testing_5a <- testing_4a %>%
+  mutate(pct_pos = round(100 * pos_tests/total_tests, 0))
+
+
+# clean up values that are NaN - set to 0
+testing_clean <- testing_5a %>%
+  mutate(pct_pos = if_else(is.nan(pct_pos), 0, pct_pos))
+```

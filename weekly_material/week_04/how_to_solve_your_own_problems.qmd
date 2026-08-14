@@ -1,0 +1,201 @@
+---
+title: "How to solve your own problems"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r, include=F}
+# load libraries
+library(palmerpenguins)
+```
+
+## You have an issue, now what?
+
+Programming often involves getting stuck. Balancing independent problem-solving with seeking external help is vital to becoming a successful programmer. It's important to challenge yourself to uncover issues, but avoid excessive frustration that hampers your productivity.
+
+### Where to get help
+
+You've exhausted your troubleshooting in R, re-read the help page and package documentation too many times, where to next? Luckily you have a few options! You may first want to start with your favorite search engine (e.g. Google).
+
+#### Google / Search Engines
+
+The art of Googling is a learned skill. For example, let's say I'm trying to filter rows in R and I don't know how or I've forgotten. I could try searching "r how to filter rows" and find this helpful [r-bloggers post answer that question](https://www.r-bloggers.com/2022/06/how-to-filter-rows-in-r/). But if I had searched "r filter rows i'm stuck" I get less specific results, potentially missing out on solutions.
+
+Though sometimes, you may find yourself in this situation.
+
+![](images/wisdom_of_the_ancients.png){fig-align="center"}
+
+#### Stack Overflow
+
+[Stack Overflow](https://stackoverflow.com/) is a public platform where users post coding questions and the community provides answers, voting for the "best" answer. You'll find many of your future questions answered on the platform.
+
+#### GitHub
+
+GitHub is typically where developers store their open source code, allowing users (like us) to post issues. These issues are directly reviewed by the developers if that particular code base is active. For example, here's a look at the tidyverse package on [GitHub with specific issues related to dplyr that users have](https://github.com/tidyverse/dplyr/issues).
+
+#### Posit Community
+
+Posit is the open-source data science company that created and maintains RStudio. They have built a community around supporting each other and have a [forum you can post questions to](https://community.rstudio.com/).
+
+#### r4ds
+
+You may also consider joining online communities such as the [r4ds slack channel](https://www.rfordatasci.com/), which is an R for data science online learning community.
+
+#### ChatGPT
+
+ChatGPT is a language model developed by OpenAI. It is designed to generate human-like text based on the inputs it receives. ChatGPT is another tool you can consider using when you hit a coding roadblock or are looking for inspiration. However, you will want to ensure you test out the code because the language model is not perfect. Moreover, you should never feed ChatGPT any kind of sensitive information.
+
+#### Ed Discussions
+
+For this course, you have access to our own learning community via Ed Discussions We encourage you to try and answer your own questions first. When you reach that point of needing outside help, please do reach out to our Piazza chat. However, we want you to submit your questions in the form of a reprex, detailed below.
+
+### How to get help
+
+When you reach that tipping point of hitting your head against the wall, these resources listed above and more can assist. However, to avoid drawing the ire of these online communities, it's important to provide a **reproducible example** (reprex or MRE for Minimal Reproducible Example) with your question. A reprex allows potential helpers to replicate your issue and offer solutions. Moreover, a reprex shows you have put in the effort to try and answer your question rather than asking people to take responsibility for your question: ["Don't ask to ask, just ask."](https://dontasktoask.com/)
+
+Often by going through the process of creating a reprex will reveal the bug to you. It's unclear whether this results from altering your perspective to explain your problem to others, taking a mental break, or something else. But for whatever reason, it often works.
+
+## Reprex
+
+Let's go through what is needed in a reprex and how to create one.
+
+### Simple example
+
+I'm subsetting a data frame using base R's brackets syntax, but I always forget if the order is \[column, row\] or \[row, column\]. Let's say I'm trying to filter a big dataset to include rows with an age greater than 17 and columns 1 and 5 through 12. My code may look like this:
+
+```{r, eval=F}
+confidential_data[age > 17, c(1, 5:12)]
+```
+
+For some reason, my code is throwing an error and I can't figure out why! I've exhausted my options and I'm now ready to reach out for help. Before I post my question, I need to prepare a reprex with the following pieces:
+
+1.  **Isolate the problem:** Try to identify the minimal amount of code necessary to reproduce the issue. If you're working with a large codebase, you may need to create a simplified version that demonstrates the problem.
+2.  **Setup your environment:** Include all necessary libraries and their versions, your R version, etc so that anyone running your code will be able to do so without having to guess what is needed.
+3.  **Provide your data:** You need to provide data to work with. While you can share your data, you need to make sure it's not confidential and easy to access. Instead, consider using built-in R datasets (mtcars) or publicly available ones such as [palmerpenguins](https://allisonhorst.github.io/palmerpenguins/).
+4.  **Ensure your code is error-free:** Before you post your reprex, make sure to run it one more time in a new R session to confirm it's error-free and still produces the problem you are trying to solve.
+5.  **Explain your problem:** Provide a clear explanation of what you're trying to accomplish, what you've tried, what you expected to happen, and what actually happened.
+
+Here's what a reprex may look like for the above example, using a publicly available dataset with similar goals. You can see that I modified the column I'm filtering for rows and changed the number of columns I'm subsetting, yet still capturing the same issue.
+
+```{r, eval=F, error=T, warning=F}
+# Description: I am trying to pull out rows with bill length greater than 40 and columns 1, 7-8 from the data. However, R returns the following error.
+
+# Setup 
+# install.packages(palmerpenguins) # if not already installed
+library(palmerpenguins)
+
+# code to create the subset
+penguins[bill_length_mm > 40, c(1, 7:8)]
+
+# Error in `[.tbl_df`(penguins, bill_length_mm > 40, c(1, 7:8)) :
+# object 'bill_length_mm' not found
+```
+
+We can make this reprex easier to share by using `reprex::reprex()` to create an output to copy and paste. Since the reprex automatically captures the error, we can actually remove the error comment. Try it out in RStudio!
+
+```{r, eval=F}
+reprex::reprex({
+# Description: I am trying to pull out rows with bill length greater than 40 and columns 1, 7-8 from the data. However, R returns the following error.
+
+# Setup 
+# install.packages(palmerpenguins) # if not already installed
+library(palmerpenguins)
+
+# code to create the subset
+penguins[bill_length_mm > 40, c(1, 7:8)]
+})
+```
+
+Now you may figure out your error as you're creating your reprex or someone on the forum you posted your reprex to helps you solve the issue. Turns out what was missing was the correct way to reference the `bill_length_mm column`! The correct syntax is: `penguins$bill_length_mm` or `confidential_data$age` in our "actual" data.
+
+```{r}
+penguins[penguins$bill_length_mm > 40, c(1, 7:8)]
+
+# confidential_data[confidential_data$age > 17, c(1, 5:12)]
+```
+
+### Non-shareable data
+
+In the above example we showed you how you may recreate your issue using publicly available data. Most of you will work with confidential, sensitive, or protected data during your careers. It's very tempting to just remove or mask columns that contain these sensitive data, but **that route is risky and strongly recommended against**. An accidental keystroke can lead to posting sensitive data where it does not belong with unpleasant and negative consequences.
+
+### Alternatives to public data
+
+You can also create your own data to demonstrate your issue, such as with characters from your favorite TV shows.
+
+```{r}
+sample_data <- data.frame(
+  first_name = c("Leslie", "Ron", "April", "Donna", "Greg"), 
+  last_name = c("Knope", "Swanson", "Ludgate", "Meagle", "Pikitis"), 
+  age = c(36, 42, 24, 26, 16), 
+  occupation=c("Deputy Director", "Director", "Assistant", "Boss", "Student")
+  )
+
+sample_data
+```
+
+### Shareable data
+
+If your data is shareable, you may want to reduce the size of the data to make the reprex more digestible. For example, if your data exist online you can limit the number of rows.
+
+```{r, eval=F}
+ds_url <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
+
+readr::read_csv(ds_url, n_max = 200) # n_max allows you specify # of rows
+```
+
+Or if your data is not available online but is shareable, you can use a function called `dput()` to write code that creates your subset.
+
+```{r}
+# creates code to rebuild my dataset
+dput(penguins[1:10,])
+```
+
+I would then take this code output and use it to create my reprex. Now anyone with my reprex can run the code in their environment and replicate my error.
+
+```{r, eval=F}
+reprex::reprex({
+# Description: I am trying to pull out rows with bill length greater than 40 and columns 1, 7-8 from the data. However, R returns the following error.
+
+# Setup 
+# install.packages(palmerpenguins) # if not already installed
+penguins <- structure(list(species = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 
+1L, 1L, 1L, 1L), levels = c("Adelie", "Chinstrap", "Gentoo"), class = "factor"), 
+island = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 
+3L), levels = c("Biscoe", "Dream", "Torgersen"), class = "factor"), 
+bill_length_mm = c(39.1, 39.5, 40.3, NA, 36.7, 39.3, 38.9, 
+39.2, 34.1, 42), bill_depth_mm = c(18.7, 17.4, 18, NA, 19.3, 
+20.6, 17.8, 19.6, 18.1, 20.2), flipper_length_mm = c(181L, 
+186L, 195L, NA, 193L, 190L, 181L, 195L, 193L, 190L), body_mass_g = c(3750L, 
+3800L, 3250L, NA, 3450L, 3650L, 3625L, 4675L, 3475L, 4250L
+), sex = structure(c(2L, 1L, 1L, NA, 1L, 2L, 1L, 2L, NA, 
+NA), levels = c("female", "male"), class = "factor"), year = c(2007L, 
+2007L, 2007L, 2007L, 2007L, 2007L, 2007L, 2007L, 2007L, 2007L
+)), row.names = c(NA, -10L), class = c("tbl_df", "tbl", "data.frame"
+))
+
+# code to create the subset
+penguins[bill_length_mm > 40, c(1, 7:8)]
+})
+```
+
+### How to create a good reprex
+
+You can review sites like GitHub, Stack Overflow, and the RStudio community to see how other users produce their reprex and how they are received by other community members. Make sure your code is well organized and whether your code follows this [style guide](https://reprex.tidyverse.org/articles/reprex-dos-and-donts.html).
+
+Here are a few more resources on creating a good reprex.
+
+-   [The reprex package documentation](https://reprex.tidyverse.org/)
+
+-   [A slide deck from Jenny Bryan](https://speakerdeck.com/jennybc/reprex-reproducible-examples-with-r)
+
+-   [Hadley Wickham's thoughts on reprex](http://adv-r.had.co.nz/Reproducibility.html)
+
+-   [Stack Overflow - though not R specific](https://stackoverflow.com/help/minimal-reproducible-example)

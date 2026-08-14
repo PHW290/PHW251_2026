@@ -1,0 +1,178 @@
+---
+title: "PHW251: Midterm Live Session"
+author: "Lyndsay Miles"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+#run libraries
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(lubridate)
+library(kableExtra)
+```
+
+We will be using data from the Tidy Tuesday project. Tidy Tuesday is a weekly social data project available for free online. They have a goal of "making learning to work with data easier" and are a great resource for interesting data sets. To learn more about this project and explore the many data sets they have available, go to <https://github.com/rfordatascience/tidytuesday>.
+
+For these practice problems, we will be using the "bob_ross" data set, which is a data set of all of the paintings painted on Bob Ross's TV show, "The Joy of Painting." A full data dictionary is available at the source website (<https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-02-21>). For our purposes, we are interested in the following variables:
+
+| Variable       | Description                                                          |
+|----------------|----------------------------------------------------------------------|
+| painting index | Painting number as enumerated in collection.                         |
+| painting title | Title of the painting.                                               |
+| Season         | Season of 'The Joy of Painting' in which the painting was featured.  |
+| Episode        | Episode of 'The Joy of Painting' in which the painting was featured. |
+| num_colors     | Number of unique colors used in the painting.                        |
+| colors         | List of colors used in the painting.                                 |
+| Cadmium_Yellow | Cadmium_Yellow used                                                  |
+
+1.  First, read in the file provided, "bob_ross.csv".
+
+```{r}
+#read in file
+#data comes from tidy tuesday (https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-02-21). 
+
+#YOUR CODE HERE
+
+#ANSWERS
+bob_ross <- read_csv("bob_ross.csv")
+```
+
+2.  Use functions you learned in Week 3 to investigate what kind of data you have here. What functions would you use to do this? Information you might want to know is: how many observations are there? how many variables? what kind of data?
+
+```{r, echo=F}
+#YOUR CODE HERE
+
+#ANSWERS
+dim(bob_ross)
+str(bob_ross)
+glimpse(bob_ross)
+ #403 observations, 27 variables.
+
+```
+
+3.  The column names could be more reader-friendly; their current format is not very 'tidy'.
+    a.  Rename the column names so that all names are lowercase and snake case.
+    b.  Use R to create an output displaying the new names.
+
+```{r}
+#YOUR CODE HERE
+
+#ANSWERS
+bob_ross <- bob_ross %>%
+  rename_with(~ tolower(gsub(" ","_",.x,fixed=TRUE))) 
+
+names(bob_ross)
+```
+
+4.  There are a lot of variables here and we just want to focus on a few of them.
+
+    a.  Create a new data frame called bob_ross_abbr that includes only the following variables:
+
+    -   painting_title
+    -   season
+    -   episode
+    -   num_colors
+    -   colors
+
+    b.  Save the data frame as a tibble.
+
+```{r}
+#YOUR CODE HERE
+
+#ANSWERS
+bob_ross_abbr <- bob_ross %>%
+  select(painting_title, season, episode, num_colors, colors)
+
+as_tibble(bob_ross_abbr)
+```
+
+5.  You want to categorize the number of colors used for each painting in the bob_ross_abbr data frame.
+
+    a.  Use a case_when() statement to add a new variable "color_cat" that categorizes a painting based on the number of colors (num_colors) used.
+    b.  Categorize as follows: "low" if 2-5 used, "medium" if 6-8 colors used, and "high" if 9 or more colors used. Any cases with just one color of paint should be categorized as "outlier".
+    c.  Arrange the observations by num_colors in ascending order before taking a look at bob_ross_abbr again.
+
+```{r}
+#YOUR CODE HERE
+
+#ANSWERS
+bob_ross_abbr <- bob_ross_abbr %>%
+  mutate(color_cat = case_when(num_colors >=2 & num_colors< 6 ~ "low",
+                               num_colors >=6 & num_colors<9 ~ "medium", 
+                               num_colors >=9 ~ "high", 
+                               TRUE ~ "outlier"
+    
+  )) %>%
+  arrange(num_colors)
+head(bob_ross_abbr)
+```
+
+6.  Could you have completed the task in the question above with an if_else() statement? Why or why not? *YOUR ANSWER HERE*
+
+#ANSWERS *Yes, you could have used nested if_else() statements to accomplish this. Using case_when() vs. using if_else() is a matter of your preference. However, using if_else() can be more cumbersome and more difficult to debug.*
+
+7.  With bob_ross_abbr, group by the variable, season, and then summarize to determine the average number of unique colors used per season. Save as a new data frame called bob_ross_colors.
+
+```{r}
+#YOUR CODE HERE
+
+#ANSWERS
+bob_ross_colors <- bob_ross_abbr %>% 
+  group_by(season) %>% 
+  summarize(avg_num_colors = mean(num_colors))
+head(bob_ross_colors)
+```
+
+8.  Determine from the bob_ross_colors data frame which season Bob used the most unique colors on average. Save your answer to an object called "most_colorful_season".
+
+Challenge: How would you use R to print out the value for this object using base R code?
+
+```{r}
+#YOUR CODE HERE
+
+#ANSWERS
+most_colorful_season <- 14
+#with base R
+most_colorful_season <- 
+  bob_ross_colors[bob_ross_colors$avg_num_colors==max(bob_ross_colors$avg_num_colors),]$season
+most_colorful_season
+```
+
+9.  Visualize what you learned in problems 7 & 8. Use the bob_ross_colors data frame to make a graph (e.g., line chart, scatterplot) showing how the average number of colors used may have changed over the seasons.
+
+```{r}
+#YOUR CODE HERE
+
+#ANSWERS
+ggplot(data = bob_ross_colors, aes(x=season, y=avg_num_colors))+
+  geom_line()+
+  labs(title="Bob Ross Paintings", subtitle = "Average Number of Colors Used per Season", x="Season", y="Average number of colors")+
+  theme_classic()
+```
+
+10. You want to look closer at the names of the paintings from Season 1 only. Create a table using the kableExtra package that just displays the painting_title and episode number. Add a caption and column names that feel appropriate.
+
+```{r, results='asis'}
+#YOUR CODE HERE
+
+#ANSWERS
+library(kableExtra)
+season_1 <- bob_ross_abbr %>% 
+  filter(season == 1) %>%
+  select(painting_title, episode)%>%
+  arrange(episode)
+
+
+knitr:: kable(season_1,
+              booktabs=TRUE,
+              format="simple",
+              caption = "Paintings from Season 1",
+              col.names = c("Painting Title", "Episode #"))
+```

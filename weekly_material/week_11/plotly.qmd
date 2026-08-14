@@ -1,0 +1,244 @@
+---
+title: "Plotly (Interactive Vizualizations)"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r}
+#| include: false
+if (!require("pacman")) install.packages("pacman")
+library(pacman)
+p_load(tidyverse, plotly, gt)
+
+filepath <- "https://data.chhs.ca.gov/dataset/4de76cd0-0ac9-4260-8ac3-0637acb444fb/resource/563ba92b-8ac5-48ec-9afd-2f515bbbad66/download/stds-by-disease-county-year-sex-2001-2021.csv"
+
+std <- read_csv(filepath) %>%
+  rename_with(~ tolower(gsub(" ","_",.x,fixed=TRUE))) 
+
+#using same plots as from the ggplot examples last week
+std_gg <- std %>%
+  mutate(year=as.character(year),
+         disease_f=factor(disease,ordered=T,levels=c("Chlamydia","Gonorrhea","Early Syphilis")))
+
+std_gg1 <- std_gg %>%
+  filter(county == "California" & disease_f=="Chlamydia" & sex != "Total") %>%
+  select(county, disease_f, cases, year, sex)
+
+```
+
+## Introduction and Overview
+
+Plotly is in R package for creating interactive web-based graphics or other HTML sources. Similar to DT for tables, Plotly relies on JavaScript for the back end programming, but a relatively simple syntax for creating nice looking, interactive graphics. Some of the features that Plotly can do are:
+
+-   Hover over points for more info
+-   Click on legend to show/hide certain categories
+-   Easily download as png or as a stand-alone html file
+-   Zoom into specific areas of the chart
+-   Overwhelming options for different visualizations
+
+Before getting into the details, have a look at the [Plotly documentation](https://plotly.com/r/) and you'll see just how many types of visualizations and options within those visualizations plotly offers. A couple of them for our purposes are:
+
+## Plotly arguments
+
+Plotly follows a pretty intuitive syntax. You can create a simple chart by just specifying the dataset you want to plot, the data for the x and y axes, and the type of chart you want.
+
+![](images/plotly_options.png)
+
+But take a look at the [Plotly documentation](https://plotly.com/r/) and you'll see just how many types of visualizations and options within those visualizations plotly offers. A couple of them for our purposes are:
+
++-----------------------------------------------+-------------------------------------------------------------------------+
+| **Add plot layers**                           | `%>% add_trace(y = ~trace_1, name = 'trace 1', mode = 'lines+markers')` |
+|                                               |                                                                         |
+| -   Different types of plots overlaid         | -   variables for x and/or y axis                                       |
+| -   Works well when table is in “wide” format | -   name for legend                                                     |
+|                                               | -   type of plot/marker                                                 |
++-----------------------------------------------+-------------------------------------------------------------------------+
+| **Combine multiple plots**                    | `%>% subplot(plot1,plot2,nrows=,ncols=,shareX=,shareY=)`                |
+|                                               |                                                                         |
+| -   Similar to facet within ggplot            | -   combine list of plots                                               |
+|                                               | -   nrows/ncols in plot grid                                            |
+|                                               | -   shareX/shareY to indicate axes that are shared                      |
++-----------------------------------------------+-------------------------------------------------------------------------+
+
+## Plotly Layout
+
+There are also [a ton of layout options](https://plotly.com/r/reference/layout/) including everything from [whether to include a legend and where to put it](https://plotly.com/r/legend/), options for chart titles, background colors, hover behaviors, and many many more. Most often you can stick to the options below or presented in the examples, but can use the plotly documentation if you want to branch out.
+
+```{r}
+
+# plotly() %>%
+#   layout( title="",
+#           showLegend=TRUE/FALSE,
+#           legend = list(title=list(text='Legend Title'),font = t2, orientation = 'h', x = 0.1, y = 0.9),
+#           yaxis=list(title=""),
+#           xaxis=list(title=""),
+#           paper_bgcolor="",
+#           plot_bgcolor="",
+#           autosize = F,
+#           width = <number of pixels>,
+#           height = <number of pixels>,
+#           ...and so many more...
+#         )
+```
+
+## Plotly Examples
+
+So let's give this a try
+
+```{r}
+#| warning: FALSE
+#| 
+slice_head(std_gg1, n = 10, by = "disease_f") %>% gt()
+
+#simple barchart
+plot_ly(
+  std_gg1,
+  x= ~year,
+  y= ~cases,
+  color= ~sex,
+  type="bar"
+  # mode="bar"
+) 
+
+
+
+```
+
+```{r}
+#| warning: FALSE
+#| 
+#bar chart - side by side vs stacked
+plot_ly(
+  std_gg1,
+  x= ~year,
+  y= ~cases,
+  color= ~sex,
+  type="bar"
+) %>%
+  layout(barmode="stack")
+
+
+```
+
+```{r}
+#| warning: FALSE
+
+
+std_gg2a <- std_gg %>%
+  filter(county != "California" & year=="2018" & sex=="Total") %>%
+  select(county, disease_f, rate)
+
+slice_head(std_gg2a, n = 5, by = disease_f) |> 
+  gt(auto_align = TRUE) |>
+  tab_header(
+    title = "California STD Case Rates",
+    subtitle = "First 5 Counties for each disease"
+  )
+#boxplot
+plot_ly(
+  std_gg2a,
+  y=~rate,
+  color=~disease_f,
+  type="box"
+)
+
+```
+
+```{r}
+#| warning: FALSE
+#| 
+#trend over time in alameda county with confidence intervals
+std_gg3 <- std_gg %>%
+  filter(county=="Alameda" & sex=="Total") %>%
+  select(-`lower_95%_ci`, -`upper_95%_ci`, -annotation_code)
+
+slice_tail(std_gg3, n=5, by = disease_f) |> 
+  gt(auto_align = TRUE) |>
+  tab_header(
+    title = "Alameda STD Cases",
+    subtitle = "First 5 rows for each disease"
+  ) 
+
+#make a presentable table
+plot_ly(
+  std_gg3,
+  x=~year,
+  y=~rate,
+  color=~disease_f,
+  type="scatter",
+  mode="lines",
+  colors=c("darkorange","darkcyan","darkslateblue"),
+  text = ~paste('Cases: ',cases,'<br>Population: ',population,'<br>Rate: ',rate)
+) %>%
+  layout(
+    title="Alameda County STD Rates, 2001-2018",
+    yaxis=list(title="Case Rate per 100,000"),
+    xaxis=list(title="Year"),
+    paper_bgcolor="azure",
+    plot_bgcolor="white"
+  )
+
+
+
+```
+
+```{r}
+#| warning: FALSE
+#| 
+#add trace example
+std_gg3b <- std_gg %>%
+  filter(county=="Alameda" & sex=="Total") %>%
+  select(year,disease,rate) %>%
+  pivot_wider(names_from=disease, values_from=rate)
+
+bind_rows(slice_head(std_gg3b, n=5), 
+          slice_tail(std_gg3b, n=5)) |> 
+  gt(auto_align = TRUE) |>
+  tab_header(
+    title = "Alameda STD Case Rates",
+    subtitle = "First and Last 5 years displayed"
+  ) 
+
+plot_ly(
+  std_gg3b,
+  x=~year,
+  y=~`Chlamydia`,
+  name="Chlamydia",
+  type="scatter",
+  mode="markers"
+) %>%
+  add_trace(y=~`Gonorrhea`,name="Gonorrhea",mode="lines")%>%
+  add_trace(y=~`Early Syphilis`,name="Early Syphilis",mode="lines+markers") %>%
+  layout(yaxis=list(title="Rate per 100,000"))
+
+```
+
+```{r}
+#| warning: FALSE
+#| 
+#subplot example
+plot1 <- plot_ly(std_gg3b,
+                 x=~year,
+                  y=~`Chlamydia`,
+                  name="Chlamydia",
+                  type="scatter")
+
+plot2 <- plot_ly(std_gg3b,
+                 x=~year,
+                  y=~`Gonorrhea`,
+                  name="Gonorrhea",
+                  type="scatter")
+
+subplot(plot1,plot2,nrows=2,shareX=T)
+
+subplot(plot1,plot2,shareY=T)
+
+```

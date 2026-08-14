@@ -1,0 +1,72 @@
+---
+title: "File Environment"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## File environments
+
+-   Working directory
+
+-   Referencing files
+
+    -   Absolute paths
+
+    -   Relative paths
+
+The **"working directory"** refers to the specific folder or directory where you're currently operating. In an ideal scenario, if you're working on a project, all the related data and code would be contained within that project's specific directory. However, this isn't always practical, as sometimes files from outside the working directory need to be accessed.
+
+## How do you find out what your current working directory is?
+
+To determine your current working directory in R, use the following command:
+
+```{r working-directory, eval=FALSE}
+getwd()
+```
+
+## Referencing Files
+
+**Within the Working Directory:** To access a file within your working directory, you can simply use the filename enclosed in quotes:
+
+```{r setup}
+library(readr)
+```
+
+
+```{r read-csv, eval=FALSE}
+data <- read_csv("homeless_impact.csv")
+```
+
+**Using Absolute Paths**: The "absolute path" is a complete path starting from the root directory of your system (or from the root on a server, like DataHub) to the specific file. You will need to replace the working directory in `[REPLACE]` based on what you see when running `getwd()`.
+
+```{r abs-path, eval=FALSE}
+data2 <- read_csv("/home/rstudio/PHW251_Fall2024/weekly_material/week_3/homeless_impact.csv")
+
+```
+
+**Using Relative Paths**: Relative paths are a way of navigating the directory structure in relation to the current location. For example, `../` moves up one level in the directory, while specific folder names like "week_1" enter that directory. Here's how to change the working directory using [relative paths](https://www.geeksforgeeks.org/absolute-relative-pathnames-unix/#):
+
+```{r setwd, eval=FALSE}
+setwd("../week_0")
+getwd()
+
+data3 <- read_csv("data/sample_data.csv")
+```
+
+However, that only changed the working directory for that chunk. The next chunk will reset to the folder this file is saved in.
+
+```{r, eval=FALSE}
+getwd()
+```
+
+## Note
+
+While working directories can be convenient, they can sometimes be tricky, particularly in Quarto / R Markdown. **We recommend using absolute paths when referencing files because they're more reliable.**

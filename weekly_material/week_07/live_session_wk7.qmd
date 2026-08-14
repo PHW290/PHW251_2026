@@ -1,0 +1,124 @@
+---
+title: "PHW251 Live Session - October 7, 2025"
+format: html
+editor: visual
+---
+
+```{r setup}
+
+library(tidyverse)
+
+```
+
+# Creating objects and variables in R
+
+We are going to do just a bit of review on creating new objects and new variables within data frames and discuss the syntax of this code.
+
+We've seen some confusion around when to use quotations.
+
+In general: if you do not use quotes, R assumes you are referring to the name of an object, if you use quotes, it assumes you are simply entering a character string value. However in some cases R will be able to interpret what you are meaning to do -- but it's best to try to stick to normal conventions.
+
+See if you can find:
+
+1\. Are there any issues with the code below where we likely aren't getting the output we want? 2. Are there any syntax issues that aren't causing an error currently? Why should we still avoid these syntax issues?
+
+```{r}
+
+"num1" <- c(1:10)
+num2 <- c(1:10)
+
+class("num1")
+class(num2)
+
+"data" <- data.frame("1N" = c(1:10), 
+                     num2 = c(11:20))
+
+```
+
+Here we are going to load a sample data set from the medical data package. Lets say we want to create a new variable that is equal to 0 if the person lived, and equal to 1 if the person died. In our data, lets assume that anyone who received "purgative_mixture" as their treatment died.
+
+```{r}
+
+#install.packages("medicaldata")
+library(medicaldata)
+
+scurvy <- medicaldata::scurvy
+
+```
+
+2.  Is there an issue with the code below? If so, what is it?
+
+```{r}
+
+"scurvy" <- scurvy %>%
+  mutate(died = ifelse(treatment == "purgative_mixture", 1, 0))
+
+glimpse(scurvy)
+
+
+```
+
+3.  What if both patients who got the cider treatment and patients who got the purgative mixture as treatment died? Try creating this new variable two ways:
+
+    a\. Using dplyr methods `if_else` and `mutate`
+
+    b\. Using dplyr methods `case_when` and `mutate`
+
+```{r}
+#if_else
+
+#case_when
+```
+
+## Problem Set 4 Bonus Review
+
+Here we are loading the data from problem set 4, and have the code for all of the prior steps in the homework combined with pipes.
+
+1.  What are some potential concerns of using this method? How can you help avoid these concerns?
+
+    ANSWER:
+
+2.  What are some benefits of using this method?
+
+    ANSWER:
+
+3.  See if you can add a comment above each line saying what the code is doing.
+
+```{r}
+
+data <- read.csv("500_Person_Gender_Height_Weight.csv")
+
+bmi_all1 <- data %>% 
+  rename_with(~ tolower(gsub(" ","_", .x, fixed=TRUE))) %>%
+  rename(location = location.information) %>%
+  mutate(bmi = if_else(location %in% c("New York", "Colorado", "Hawaii"),
+                       (703 * weight)/(height * 12)^2, 
+                       weight/(height/100)^2),
+         bmi_cat = case_when(bmi > 30    ~ "Obese",
+                             bmi > 25    ~ "Overweight",
+                             bmi > 18.4  ~ "Normal",
+                             TRUE        ~ "Underweight")) %>%
+  arrange(location, desc(bmi)) #%>%
+  #select(-c(height, weight, bmi)) 
+
+```
+
+3.  What are the differences between the two sets of code below?
+
+```{r}
+
+bmi_all2 <- bmi_all1 %>%
+  group_by(location) %>%
+  arrange(bmi)
+
+bmi_all3 <- bmi_all1 %>%
+  arrange(location, bmi)
+
+```
+
+4.  Now, try to summarize the average BMI by location, and make a table of this using kable.
+
+```{r}
+
+
+```

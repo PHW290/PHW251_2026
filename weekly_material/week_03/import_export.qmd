@@ -1,0 +1,262 @@
+---
+title: "Tibbles & Importing/Exporting Data"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r, include=F}
+library(readr)
+```
+
+## Overview
+
+-   Importing data (.csv, .xlsx, RDS)
+
+-   Exporting data (.csv, .xlsx, RDS)
+
+## Objectives
+
+1.  Learn how to import data into R
+2.  Learn how to export data from R
+
+## Importing data
+
+R can read in a variety of source data types and automatically store these data as data frames or tibbles. Here are some popular packages and relevant functions!
+
++----------------+-------------+--------------+
+| File Format    | Package     | Functions    |
++================+=============+==============+
+| Text, CSV, TSV | Base R      | read.csv()   |
++----------------+-------------+--------------+
+| Text, CSV, TSV | readr       | read_delim() |
+|                |             |              |
+|                |             | read_csv()   |
++----------------+-------------+--------------+
+| Text, CSV, TSV | data.table  | fread()      |
++----------------+-------------+--------------+
+| Excel          | readxl      | read_excel() |
++----------------+-------------+--------------+
+| SAS, Stata     | haven       | read_sas     |
++----------------+-------------+--------------+
+| RDS            | Base R      | readRDS      |
++----------------+-------------+--------------+
+
+### readr
+
+We could use base R's read.csv(), but [`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html) is an improved version.
+
+-   Faster
+
+-   Creates a tibble
+
+    -   Prevents character conversion to a factor
+
+    -   Avoids row names
+
+    -   Less picky about column names
+
+-   Reproducibility - code for readr works the same on everyone's computer
+
+### readr example
+
+``` r
+readr:: read_csv(
+  file,                         # <1>
+  col_names = TRUE,             # <2> 
+  col_types = NULL,             # <3>
+  skip = 0,                     # <4>
+  n_max = Inf,                  # <5>
+  guess_max = min(1000, n_max),
+  skip_empty_rows = TRUE        # <6>
+)
+```
+
+1.  Specify a path to your file. When using datahub, it's easier to upload a file to your cloud directory, though you can also download files by specifying a URL.
+2.  Specify column names (TRUE will pull names from csv, can also provide a vector of names)
+3.  Specify column types
+4.  Number of lines to skip before reading data in
+5.  Indicate number of rows to read in (start small if file is large)
+6.  Should blank rows be ignored altogether?
+
+You can check out examples of Excel and SAS/SPSS/Stata imports in @sec-additional-examples
+
+## Importing
+
+### Import
+
+Let's first try importing a file from the web. We will read in a .csv file.
+
+```{r, warning=F, message=F}
+file_path_csv <- "https://data.chhs.ca.gov/dataset/8eb8839f-52a1-410b-8c4a-5b1c1678bbc2/resource/21fec3a1-ae82-49f4-ae97-fd8c78ca22ee/download/retail-availability-of-electronic-smoking-devices-by-county.csv"
+
+# read in the file with default options
+esd <- read_csv(file_path_csv)
+
+# looks good!!
+head(esd)
+```
+
+### Adding options
+
+Now let's add options, starting with column names.
+
+```{r, warning=F, message=F}
+esd_colnames <- read_csv(
+  file_path_csv,
+  col_names = c("county", "yr", "pct", "ci_l", "ci_u")
+)
+
+head(esd_colnames)
+```
+
+Something is wrong! Our previous column headers are now in row 1 due to us specifying column names. We can fix this issue by skipping the first row.
+
+### Skipping rows
+
+```{r, warning=F, message=F}
+esd_colnames <- read_csv(
+  file_path_csv,
+  col_names = c("county", "yr", "pct", "ci_cl", "ci_u"),
+  skip = 1
+)
+
+head(esd_colnames)
+```
+
+### Specifying column types
+
+Let's take a look at the data structure. Notice that the percentage `pct` and confidence interval columns `ci_cl` `ci_u` are read in as a character?
+
+```{r}
+str(esd_colnames)
+```
+
+We can specify the data type with the col_types option.
+
+```{r}
+esd_colnames <- read_csv(
+  file_path_csv,
+  col_names = c("county", "yr", "pct", "ci_cl", "ci_u"),
+  col_types = cols(
+    county = col_character(), 
+    yr     = col_double(),   
+    pct    = col_number(),    
+    ci_cl  = col_number(),    
+    ci_u   = col_number()    
+    ),
+  skip = 1
+)
+
+str(esd_colnames)
+```
+
+### Specifying NA values
+
+Our column types were fixed, but we got a warning about parsing issues.
+
+```{r, eval=F}
+# check the errors with problems(); we first need to call the data frame with
+# the problems.
+esd_colnames
+problems()
+
+problems_df <- problems(esd_colnames)
+
+```
+
+Looks like unexpected strings were present in the data, which read_csv() was unsure how to handle. We can specify these strings so that they are changed into NA values.
+
+```{r}
+# no warnings!
+# save a clean file for exporting
+esd_clean <- read_csv(
+  file_path_csv,
+  col_names = c("county", "yr", "pct", "ci_cl", "ci_u"),
+  col_types = cols(
+    county = col_character(), 
+    yr     = col_double(),   
+    pct    = col_number(),    
+    ci_cl  = col_number(),    
+    ci_u   = col_number()    
+    ),
+  skip = 1,
+  na = c("", "NA", "*", "n/a")
+)
+
+str(esd_clean)
+```
+
+## Exporting
+
+Exporting data is much simpler than importing data. You will want to consider the following before you export:
+
+-   Who will use this data?
+
+-   Will more analysis need completing or is the intended use for review in excel?
+
+```{r, eval=F}
+# export csv - good if needing flexibility for other analytic programs
+readr::write_csv(esd_clean, "esd_clean.csv")
+
+# export to excel - good if others want to look at the data in excel
+openxlsx::write.xlsx(esd_clean, "esd_clean.xlsx")
+
+# export RDS - good if you will want to pick up the data back in R
+saveRDS(esd_clean, "esd_clean_saved.RDS")
+```
+
+In these examples the files were saved to the current working directory. However, you can specify an output location by providing a path. For example if you wanted to place the file one directory backwards, you could write: `../esd_clean.csv`.
+
+## Additional Examples
+
+### Excel Sheets
+
+``` r
+readxl::read_excel(
+  path,
+  sheet = NULL,                 # <1>
+  range = NULL,
+  col_names = TRUE,             # <2>
+  col_types = NULL,             # <2>
+  na = "",                      # <3> 
+  trim_ws = TRUE,               # <4>
+  skip = 0,                     # <5>
+  n_max = Inf,                  # <6>
+  guess_max = min(1000, n_max), # <6>
+  .name_repair = "unique"
+)
+```
+
+1.  Specify sheet and/or range of cells within sheet
+2.  Control column names and types
+3.  Handling NA's
+4.  Handling white space
+5.  How many rows to skip, starting from the top
+6.  Number of max rows
+
+### SAS, SPSS, Stata
+
+``` r
+haven::read_sas(
+  data_file,
+  catalog_file = NULL,
+  encoding = NULL,             # <1>
+  catalog_encoding = encoding, # <1>
+  col_select = NULL,           # <2>
+  skip = 0L,                   # <3>
+  n_max = Inf,                 # <3>
+  .name_repair = "unique"
+)
+```
+
+1.  Encoding, if applicable
+2.  Specify columns to select
+3.  Skip rows and number of max rows

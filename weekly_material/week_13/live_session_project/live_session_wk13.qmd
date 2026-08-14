@@ -1,0 +1,133 @@
+---
+title: "Live Session - Week 13"
+format: html
+editor: visual
+---
+
+## Live Session - Week 13
+
+Topics:
+
+-   Project
+
+    -   Milestone 4
+
+    -   Milestone 5 & 6
+
+-   Questions
+
+## Project
+
+### Milestone 4
+
+-   Due Mon, 11/20
+
+-   Requirements - <https://bcourses.berkeley.edu/courses/1525339/assignments/8589479>
+
+    -   Joined data frame
+
+        -   Requires individual data frames to be in the same structure
+
+        -   Consider type of join - left, full, etc
+
+            -   Review week 10 content and week 11 live session
+
+        -   Create any additional variables needed for final deliverables
+
+    -   2-3 visualizations (1 per group member)
+
+        -   Print quality tables
+
+            -   kable/kableExtra
+
+            -   datatable
+
+            -   formattable
+
+            -   or others...
+
+        -   Print quality charts
+
+            -   ggplot
+
+            -   plotly
+
+            -   or others...
+
+        -   Requirements for visualizations
+
+            -   Code used to generate visual
+
+                -   Code used to import and clean data (milestones 2 and 3) can be included in the rmd/qmd but please use the option include=FALSE in order to prevent the code and any output from showing. Code chunk would look like `{r chunk_name, include=FALSE}`
+
+                -   Also utilize `warning=FALSE` and `message=FALSE` to suppress any warnings that may be displaying from other chunks.
+
+            -   1-2 sentence interpretation - your interpretation of the visual and anything that it tells you related to the overarching question
+
+            -   Make sure the visual can stand-alone, meaning it includes enough information in title, legend, and footnote so that a person who sees only the visualization could understand what is being presented.
+
+            -   Make sure column names, axis labels, and any other labels are meaningful and not just the name of the variable (ex: "County" rather than "county_name")
+
+-   Submission
+
+    -   Rmd/qmd submitted via gradescope
+
+    -   Html output submitted through gradescope AND published to rpubs
+
+        -   See rpubs video in week 12 (Please note that publishing to rpubs is required and not optional this year)
+
+    -   Share rpubs link with grader via email or add link to rmd/qmd submitted to gradescope
+
+-   Example from 2022: <https://rpubs.com/laurennnelson/phw251_ms4_example>
+
+### Milestones 5 & 6
+
+-   Requirements - <https://bcourses.berkeley.edu/courses/1525339/assignments/8589481>
+
+-   Milestone 5 is optional and due 11/27 - opportunity to get teaching team feedback before final submission
+
+-   Milestone 6 is due 12/10
+
+-   Final report format should include
+
+    -   2-3 print quality visualizations (at least one per team member)
+
+    -   Problem Statement (1-2 paragraphs)
+
+    -   Methods: data sources, years and/or dates of data, description of cleaning and creating new variables, analytic methods, etc.
+
+    -   Results
+
+    -   Discussion (interpretation of results)
+
+    -   Maximum of 1,000 words
+
+-   **Notes:**
+
+    -   Reports do not necessarily need to be structured in a typical scientific article manner and creativity is welcomed
+
+    -   No statistical testing is required
+
+    -   Focus of grading will be on the analytic/programming components, rather than the writing; however, the writing is important for explaining what you did and how it relates to the overarching problem.
+
+    -   No code should be shown in final version, just narrative and visualizations
+
+        -   Utilize `include=FALSE` to hide chunk code and output
+
+        -   Utilize `echo=FALSE` to hide chunk code, but display output
+
+        -   Utilize `warning=FALSE` and `message=FALSE` to suppress warnings/messages
+
+<!-- -->
+
+-   Submission
+
+    -   Rmd/qmd submitted via gradescope
+
+    -   Html output submitted through gradescope AND published to rpubs
+
+        -   See rpubs video in week 12 (Please note that publishing to rpubs is required and not optional this year)
+
+    -   Share rpubs link with grader via email or add link to rmd/qmd submitted to gradescope
+
+-   Example from 2022: <http://rpubs.com/LyndsayM/R_PublicHealth_2022_Final_Project>

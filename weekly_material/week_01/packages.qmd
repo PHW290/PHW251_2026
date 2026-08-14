@@ -1,0 +1,156 @@
+---
+title: "Packages"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+This toolkit will cover what packages are, how they work, how to install them, how to use them, and ways to streamline package management.
+
+## What is a package?
+
+R packages are a collection of R functions, compiled code, and sample data. These packages expand the capabilities of base R, and can Improve efficiency or effectiveness of programming.
+
+-   Some narrow, some broad
+
+-   Some focused on specific industry needs, some focused on refining a specific type of task (import, stats, graphics, etc.)
+
+-   Some meant to work with other packages (tidyverse is an example of this)
+
+-   Anyone can create a package
+
+-   Thousands of packages available
+
+-   RStudio does create and maintain several very helpful packages
+
+## How do packages work in the R environment?
+
+Packages need to be installed and loaded in order to use them in R.
+
+### Libraries
+
+Packages are contained within a **library**.
+
+-   User library (user or cloud)
+
+-   System library (default packages)
+
+There are two main ways to see what packages are already stored in your environment. You can use the "packages" tab in the bottom right pane, or run code. We recommend using code to manage packages -- this will be much more efficient as you continue to learn and use R. To see all packages already stored in your environment:
+
+```{r}
+# run code below to see packages that are 
+# available within your environment
+library()
+
+#return list with more information to console
+# save to an object named "info"
+info <- installed.packages()
+```
+
+There are a lot of packages already installed because we are using Datahub, which has an extensive list of packages available for student use.
+
+## Finding Packages & Documentation
+
+For this course, we will tell you what packages to use. However, there are many more packages available for various uses in R.
+
+-   Many of the packages we use are part of a group of packages called the [Tidyverse](https://www.tidyverse.org/packages/). These are very commonly used packages for data science.
+
+-   A lot of packages have very helpful guides online. For example: [dplyr](https://dplyr.tidyverse.org), which is a tidyverse package we will use for data manipulation.
+
+-   You can also view a [full list](https://cran.r-project.org/web/packages/available_packages_by_date.html) of packages available on CRAN
+
+    -   All of the packages on CRAN will have a PDF reference manual that documents in detail how to use the package. These all follow the same format. Example: [dplyr](https://cloud.r-project.org/web/packages/dplyr/dplyr.pdf).
+
+-   Within R, you can run the `help()` function to get more information about using a specific package.
+
+```{r}
+
+help(package = "dplyr")
+
+```
+
+## Installing and Loading Packages
+
+Packages must be installed into your R Studio environment in order to be used. Once a package is installed, you just need to load it each time you use R in order to use the package.
+
+-   Use `install.packages()` function to install a package
+
+    *Note: Often installing a new package will require the installation of other dependent packages (typically automatic).*
+
+```{r}
+# you can un-comment the below line to run the code
+# install.packages("dplyr")
+```
+
+-   Use `library()` function to load a package.
+
+    *Note: Occasionally, multiple packages will have a function with the same name. Whichever package is loaded last will take priority in this instance, and you will receive a message in the console about these conflicts.*
+
+```{r}
+library(dplyr)
+```
+
+## Updating Packages
+
+If one or more packages needs to be updated, you have a few options.
+
+-   Freshly install the package from CRAN using `install.packages()`. This works well when you only need to update one package.
+
+-   Use the `update.packages()` function to update all packages in your library. This works well if you need to update many packages.
+
+```{r}
+
+# you can un-comment the below line to run the code
+# update.packages()
+
+```
+
+-   Alternately, you can check which packages need updating and update only those using `update.packages()`.
+
+```{r}
+
+# return list of packages needing an update
+# you can un-comment the below line to run the code
+# old_list <- old.packages()
+
+# update only old package2
+# you can un-comment the below line to run the code
+# update.packages(oldPkgs = old_list, ask = FALSE)
+
+```
+
+-   Another often preferred option is to use a package management tool (detailed below)
+
+## Package Management
+
+You need to install packages in each computing environment you use, load them each time you want to use them, and packages frequently need to be updated. This can become a lot to manage if you are switching computing environments or working with a group. Luckily, there is also a package to make this easier!
+
+### Using pacman
+
+This package is a package management tool that streamlines multiple above steps for you.
+
+1.  Make sure pacman is installed in the computing environment you are using. This code checks if the package pacman is already installed. If it's not installed, the code then installs it.
+
+```{r}
+
+if (!require("pacman")) install.packages("pacman")
+library(pacman)
+
+```
+
+2.  Use the `p_load()` function to install and load packages. This checks to see if a package is installed, installs it if it is not installed, and loads it. The `update = TRUE` option will updated all out of date packages.
+
+```{r}
+
+p_load(dplyr, ggplot2, purrr)
+
+```
+
+This code becomes very helpful when you are using a lot of packages. It also allows you to automate the process of package install, loading, and updating. For example -- you can just put the code in this section at the top of all of your code files, and you will then have current versions of all the packages listed installed and loaded wherever you run your code.

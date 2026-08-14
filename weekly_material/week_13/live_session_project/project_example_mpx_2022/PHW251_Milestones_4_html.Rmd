@@ -1,0 +1,454 @@
+---
+title: 'Milestone #4'
+subtitle: "Fall 2022"
+author: "Sam Gorman, Bria Larson, Lyndsay Miles"
+output:
+    html_document: default
+---
+
+
+```{r, include=FALSE}
+#load libraries
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(data.table)
+library(knitr)
+library(stringr)
+library(kableExtra)
+library(DT)
+library(png)
+library(ggrepel)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r download datasets, tidy_source(), include=FALSE}
+#Datasets provided in the PHW251 Project Data github repo
+#We replaced the original euro_mpx and euro_census_stats files 
+#with the modified files provided by Will. 
+
+#Euro mpx file
+
+euro_mpx <- read_csv("data/euro_mpx_cases_mod.csv")
+
+#Euro Pop Denominators 
+pop_denom <- read_csv("data/euro_pop_denominators.csv")
+
+#Euro Census Stats
+census_stats <- read_csv("data/euro_census_stats_mod.csv")
+
+#World countries by region and subregion
+country_regions <- read_csv("data/world_country_regions.csv")
+```
+
+```{r assessing number of unique country codes, include=FALSE}
+#Knowing that we will have to join data sets on country code, we first check to see the 
+#number of unique country codes in each data set
+
+euro_mpx <-euro_mpx %>% arrange(CountryCode)
+
+euro_mpx_codes <- unique(euro_mpx$CountryCode) #31
+
+pop_denom_codes <- unique(pop_denom$geo) #54
+
+census_stats_codes <- unique(census_stats$COUNTRY_CODE) #32
+
+# Note: because variable names in country_regions have hyphens, it is difficult to
+# assess for their unique values.  Therefore, we will asses for unique values 
+# after tidying country_regions in a code chunk below.
+
+# We notice that data sets have different numbers of unique country codes.  Since we are 
+# basing analysis on cases in the euro_mpx data, we will only want to include the 31 countries 
+# for whom we have case data. To do this, we may need to filter other data sets to only include
+# the 31 countries in euro_mpx data set.
+
+euro_mpx_codes
+
+pop_denom_codes
+
+census_stats_codes
+
+# We see that pop_demom has a number of aggregate codes like
+# "EA18", "EU27_2020", as well as some smaller countries like Kosovo (XK)  and Liechtenstein (LI). 
+# census_stats includes LI giving us 32 countries instead of 31. 
+```
+
+```{r euro code vector, include=FALSE}
+# Now let's turn code values from euro_mpx_codes into a vector and then we can filter 
+# any country code variables in other data sets using that vector.
+
+euro_code_vector <- unique(euro_mpx$CountryCode)
+```
+
+
+```{r euro_mpx_clean, include=FALSE}
+euro_mpx_clean <- euro_mpx %>%
+  rename_with( ~ tolower(gsub(" ", "", .x, fixed = TRUE))) %>%
+  select(-source) %>%
+  rename(cases = confcases, date = daterep)
+
+head(euro_mpx_clean)
+```
+
+```{r Tidying euro_mpx variables, include=FALSE}
+#For euro_mpx variables:
+#Convert all variable names to lower case, remove "Source" variable, 
+#rename variables to simpler names.
+euro_mpx_clean <- euro_mpx %>%
+  rename_with( ~ tolower(gsub(" ", "", .x, fixed = TRUE))) %>%
+  select(-source) %>%
+  rename(cases = confcases, date = daterep) %>%
+  mutate(month = month(date))
+
+head(euro_mpx_clean)
+ 
+```
+
+
+```{r Tidying pop_denom columns, include=FALSE}
+#For pop_denom variables:
+
+#Convert all variable names to lower case, 
+#rename obs_value" to "population", and 
+#select year, geo, population.
+
+pop_denom_clean <-pop_denom %>%
+  rename_with( ~ tolower(gsub(" ", "", .x, fixed = TRUE))) %>%
+  rename(population = obs_value) %>%
+    select(geo, time_period, population)
+
+head(pop_denom_clean)
+
+```
+
+```{r euro pop small, include=FALSE}
+#Find 2020 populations in pop_denom_clean for the 31 countries represented in euro_mpx
+#Originally we wanted to use 2022 populations, but UK data for 2022 was unavailable. 
+#To include UK, we chose their last year of record in pop_denom, 2020.
+
+pop_denom_2020 <- pop_denom_clean %>%
+  group_by(geo) %>%
+  filter(time_period == max(time_period)) %>%
+  ungroup() %>%
+  arrange(geo)
+
+
+dim(pop_denom_2020)
+
+#Uh-oh! euro_pops has 44 country codes, NOT the 31 that euro_mpx_clean does!
+#Let's use the euro_codes_vector to filter by 31 countries included in euro_mpx.
+
+pop_denom_small <- pop_denom_2020 %>%
+  filter(geo %in% euro_code_vector)
+dim(pop_denom_small)
+
+#Note: we did this in order to use cbind().  
+#In subsequent data sets we used inner_join() or left_join() 
+#and didn't need to filter them down to 31 obs.
+```
+
+
+```{r Tidying census_stats columns, include=FALSE}
+#Convert all variable names to lower case, 
+#rename time to census_year, select country_code, sex, and age
+#did not include time (year) because all are for 2011
+census_stats_clean <- census_stats %>%
+  rename_with( ~ tolower(gsub(" ", "", .x, fixed = TRUE))) %>%
+  select(country_code, sex, age, res_pop, pop)
+
+head(census_stats_clean)
+
+```
+
+
+```{r Tidying country_region columns, include=FALSE}
+#For country_regions_clean 
+#variable description country_regions_clean
+
+#Filter for Europe, rename to get rid of dashes, 
+#select three variables of interest.
+#Cyprus is included in the euro_mpx data set but in this data set it is categorized 
+#as being in Western Asia (subregion) and Asia, not Europe. 
+#We recoded in order to include Cyprus in the analysis.
+#We recorded Greece and UK country_codes in order to match the country codes in the other data sets.
+country_regions_clean <-country_regions %>%
+  rename(alpha_2 = "alpha-2", sub_region = "sub-region") %>%
+  mutate(sub_region = if_else(name == "CYPRUS", "Southern Europe", sub_region)) %>%
+  mutate(region = if_else(name == "CYPRUS", "Europe", region)) %>%
+  mutate(name = if_else(name == "UNITED KINGDOM OF GREAT BRITAIN AND NORTHERN IRELAND", "UNITED KINGDOM", name)) %>%
+  filter(region == "Europe") %>%
+  select(name, alpha_2, sub_region) %>%
+  mutate(country_code = toupper(str_sub(alpha_2, 1,2))) 
+
+country_regions_clean <- country_regions_clean %>%
+  select(name, sub_region, country_code)
+
+country_regions_clean$country_code[country_regions_clean$country_code == 'GR'] <- 'EL'
+
+country_regions_clean$country_code[country_regions_clean$country_code == 'GB'] <- 'UK'  
+
+#Also, checking for number of unique country codes
+#country_regions_codes <- unique(country_regions_clean$alpha_2) #52
+#sub_regions <- unique(country_regions_clean$sub_region)
+```
+
+```{r checking for NAs, include=FALSE}
+sum(is.na(euro_mpx_clean))
+sum(is.na(country_regions_clean))
+sum(is.na(pop_denom_clean))
+sum(is.na(census_stats_clean))
+#Since there are none, we do not have to recode them. 
+```
+
+### Joining data frames
+First, need to group by country code to get number of total cases per country and then calculate incidence per 100,000 people by country
+```{r create new variable "total_risk", warning=FALSE}
+total_risk_by_country <- euro_mpx_clean %>%
+  group_by(countrycode) %>%
+  summarise(cases = sum(cases)) %>%
+  arrange(countrycode) %>%
+  left_join(pop_denom_small, by = c("countrycode" = "geo")) %>%
+  mutate(total_risk = round((cases/population * 100000),2))
+
+str(total_risk_by_country)
+```
+
+Join the cleaned euro_mpx to a filtered, clean pop_denom
+```{r create variable "monthly_risk", warning=FALSE, message=FALSE }
+
+euro_mpx_joined <- left_join(euro_mpx_clean, pop_denom_small, 
+                           by = c("countrycode" = "geo")) 
+
+monthly_risk_by_country <- euro_mpx_joined %>%
+  select(-c(countryexp, date, time_period)) %>%
+  group_by(countrycode, month) %>%
+  mutate(monthly_cases = sum(cases),
+         monthly_risk = round((monthly_cases/population * 100000),2)) %>%
+  summarize(mean_risk = mean(monthly_risk)) %>%
+  pivot_wider(names_from = month, values_from = mean_risk)
+```
+
+Calculate % of population by age strata
+```{r create strata_pop, total_pop and perc_pop from census_stats, warning=FALSE, message=FALSE }
+
+census_stats_perc <- census_stats_clean %>%
+  left_join(country_regions_clean, by = "country_code") %>%
+  group_by(name, country_code, sex, age) %>%
+  summarize(strata_pop = sum(pop)) %>%
+  ungroup() %>%
+  group_by(country_code) %>%
+  mutate(total_pop = sum(strata_pop)) %>%
+  mutate(perc_pop = round(strata_pop/total_pop, 2))
+
+
+```
+
+
+```{r, include=FALSE}
+#From milestone 3
+#One or more tables with descriptive statistics for 4 data element
+#Here we have two examples of tables, the first built using kable and the second with datatable. 
+#As datatable includes HTML, we've included an image of the table, as it would not print out properly in PDF.
+kable(monthly_risk_by_country, 
+      booktabs = T, 
+      col.names = c("Country","May", "Jun", "Jul", "Aug"),
+      caption = "Monthly Incidence of Monkeypox per 100k People May-Aug 2022") %>%
+      footnote(general = 
+      "European Centre for Disease Prevention and Control & EuroStat",
+        general_title = "Data Source") %>%
+  kable_styling(full_width = T)
+
+```
+
+
+```{r total risk table, include=FALSE}
+total_risk_table <- total_risk_by_country %>%
+  inner_join(country_regions_clean, by = c("countrycode" = "country_code")) %>%
+  select(name, cases, total_risk) %>%
+  arrange(desc(cases))
+
+datatable(total_risk_table,
+            rownames = F,
+            colnames = c("Country", "Total Cases", "Incidence per 100K"), 
+            caption = "Incidence of Monkeypox in EU by Country per 100K People May-Aug 2022",
+                        options = list(pagelength = 10,
+                        lengthMenu = c(10,20,30)))
+```
+
+
+### Visualizations
+
+**Chart:** Percentage of young men (age 15-29) in European Countries, 2011
+
+```{r create new variable perc_young_men, warning=FALSE, message=FALSE}
+mod_census_stats_v4 <- census_stats_perc %>%
+  filter(sex == "M", age == "Y15-29") %>%
+  mutate(perc_young_men = (strata_pop/total_pop)*100)%>%
+  arrange(perc_young_men) 
+```
+
+```{r chart of percentages young men, warning=FALSE, message=FALSE}
+# factor country_code variable
+mod_census_factor <- mod_census_stats_v4
+
+mod_census_factor$country_code <-factor(mod_census_factor$country_code, 
+              levels = mod_census_factor$country_code[order(mod_census_factor$perc_young_men)])
+
+mod_census_factor$name <- factor(mod_census_factor$name,
+                                 levels = mod_census_factor$name[order(mod_census_factor$perc_young_men)])
+
+#Chart of percentage of men age 15-29 in population by country
+
+ggplot(mod_census_factor, aes(x= name, y= perc_young_men)) +
+    geom_bar(stat = "identity", color = "blue", fill = "blue") +
+  labs(x = "Countries", y = "%" ,
+   title = "Percent of males age 15-29 in population of European countries, 2011") +
+  theme(axis.text.x = element_text(size = 6, angle = 45)) #+theme_bw()
+```
+
+Interpretation: The percentage total population that are men age 15 - 29 varies slightly (7.9 % - 11.8 %) among European countries.
+
+**Chart:** Percent of men age 15-29 by European countries, 2011
+
+```{r join country_regions to mod_census_stats4 for a chart by region, warning=FALSE, message=FALSE}
+mod_census_regions <- left_join(mod_census_factor, country_regions_clean)
+# factor country_code variable AGAIN
+mod_census_factor_2 <- mod_census_regions
+mod_census_factor_2$country_code <-factor(mod_census_factor_2$country_code, 
+              levels = mod_census_factor_2$country_code[order(mod_census_factor_2$perc_young_men)])
+
+mod_census_factor_2$name <-factor(mod_census_factor_2$name, 
+              levels = mod_census_factor_2$name[order(mod_census_factor_2$perc_young_men)])
+
+med_val <- median(mod_census_regions$perc_young_men)
+# med_val
+
+ggplot(mod_census_factor_2, 
+    aes(x= name, y= perc_young_men, fill = sub_region)) +
+    geom_bar(stat = "identity") +
+    geom_hline(yintercept = med_val, linetype = 2) +
+    geom_text(aes(0,med_val,label = "median %", vjust = -1, hjust = -1)) +
+  labs(x = "Countries", y = "%" ,
+   title = "Percent of males age 15-29 by European countries, 2011",
+   fill = "Region") +
+  theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1, vjust = 0.9))
+
+```
+
+
+Interpretation: The percentage total population that are men age 15 - 29 varies slightly by European region. Most of the countries in Northern Europe had percentages of young men above the median value of 9.6%, while most countries in Western Europe had percentages of young men below the median value of 9.6%.
+
+
+**Scatterplot:** Ecologic Analysis Comparing Monkeypox Case Rates per 100,000 to the percentage of the population that is male and aged 15-29.
+
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+#total risk by country, use total_risk
+#age strata, census_stats_perc, perc_pop
+#scatterplot where y is incidence per country and x is population between 15 and 29
+#what percent of the population is between 15 and 29?
+df_eco_analysis <- total_risk_by_country %>%
+  left_join(census_stats_perc, by = c("countrycode" = "country_code")) %>% 
+  mutate(age = factor(age,
+                      levels = c("Y_LT15", "Y15-29", "Y30-49", "Y50-64", "Y65-84", "Y_GE85"),
+                      labels = c("Under 15", "Age 15-29", "Age 30-49", "Age 50-64", "Age 65-84", "Age 85 and older"),
+                      ordered = T
+                      )) 
+
+ #ggplot(df_eco_analysis, aes(x = age, y = perc_pop)) + 
+ #geom_point()
+  #this doesn't look right
+
+```
+
+```{r create small data set, warning=FALSE, message=FALSE }
+#create smaller data set to join to euro_mp for ecological analysis
+mod_census_to_join <- mod_census_stats_v4 %>%
+  select(country_code, perc_young_men)
+```
+
+```{r, warning=FALSE, message=FALSE}
+#what is the incidence per country (x)
+#what percent of the population is between 15 and 29? (y)
+young_perc <- mod_census_stats_v4 %>%
+  left_join(total_risk_by_country, by = c("country_code" = "countrycode")) %>%
+  filter(country_code != "LI")
+
+ggplot(young_perc, aes(x = perc_young_men, y = total_risk)) + 
+ geom_point() +
+  geom_label_repel(aes(label=name, size = NULL), nudge_y = 0.5) +
+  geom_smooth(fullrange=TRUE, method = "lm", se = FALSE)+
+  labs(x = "Percentage of Male Population, Aged 15-29", y = "Risk per 100,000",
+                  title = "Monkeypox Risk Compared to % Male Population Age 15-29 by Country", 
+       subtitle = "Monkeypox cases in 2022, Population estimates from 2011")
+```
+
+Interpretation: There does not appear to be a strong correlation between the percentage of men age 15-29 in a country and the country's total risk of Monkeypox per 100,000 people. The range of % of men in this age category is 7.86-11.85%, and the range of Monkeypox risk by country is 0.06-13.27.
+
+**Table and chart:** Monthly Monkeypox Incidence by European Region
+
+
+```{r, warning=FALSE, message=FALSE}
+population_by_region <- euro_mpx_joined %>% 
+  left_join(country_regions_clean, by = c("countrycode" = "country_code"))
+```
+
+```{r, warning=FALSE, message=FALSE}
+monthly_risk_by_region <- population_by_region %>% 
+  select(c(countrycode, cases, month, population, sub_region)) %>% 
+  group_by(sub_region, month) %>% 
+  mutate(month = case_when(
+    month %in% 5 ~ "May",
+    month %in% 6 ~ "June", 
+    month %in% 7 ~ "July",
+    month %in% 8 ~ "August"),
+   month = factor(month, ordered = T, 
+                             levels = c("May", 
+                                        "June", 
+                                        "July", 
+                                        "August")),
+        monthly_cases = sum(cases),
+         region_total_pop = sum(population),
+         monthly_risk = round((monthly_cases/region_total_pop * 100000),3)) %>% 
+  summarize(mean_risk = mean(monthly_risk))
+#%>% 
+ # pivot_wider(names_from = month, values_from = monthly_risk) 
+
+monthly_risk_region_table <- monthly_risk_by_region %>% 
+  pivot_wider(names_from = month, values_from = mean_risk)
+
+#monthly_risk_by_country <- euro_mpx_joined %>%
+  #select(-c(countryexp, date, time_period)) %>%
+ # group_by(countrycode, month) %>%
+ # mutate(monthly_cases = sum(cases),
+      #   monthly_risk = round((monthly_cases/population * 100000),3)) %>%
+  #summarize(mean_risk = mean(monthly_risk)) %>%
+ # pivot_wider(names_from = month, values_from = mean_risk)
+```
+
+```{r, warning=FALSE, message=FALSE}
+kable(monthly_risk_region_table,
+      booktabs = T,
+      col.names = c("European Region","May", "Jun", "Jul", "Aug"), 
+      caption = "Monthly Incidence of Monkeypox per 100k May-Aug 2022") %>% 
+  footnote(general = "European Centre for Disease Prevention and Control & EuroStat",
+           general_title = "Data Source") %>% 
+  kable_styling(full_width = T)
+```
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(monthly_risk_by_region, aes(x = month, y = mean_risk)) +
+  geom_bar(aes(fill = sub_region), stat = "identity", position = position_dodge(width = 0.8)) +
+             labs(x = "Months May-Aug 2022", y = "Risk per 100,000", fill="Subregion",
+                  title = "Monthly Monkeypox Incidence by European Region")
+
+```
+
+Interpretation: The above table and chart show us that monthly incidence of monkeypox per 100,000 people increases between May and July 2022 (peaking during the month of July) and begins to decrease in August 2022. Incidence is highest in the southern region of Europe in July 2022( 0.09/100,000) followed by western Europe in July 2022 (0.07/100,000).
+
+

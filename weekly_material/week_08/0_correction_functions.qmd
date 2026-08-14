@@ -1,0 +1,130 @@
+---
+title: "Correction Functions"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+Below we detail a few new functions that are useful for making corrections to data.
+
+## Conditional functions
+
+### if_else()
+
+Dplyr has a built in version of an if statement that is usable within a dplyr chain called `if_else()`. When we use `if_else` during a dplyr call, we're able to vectorize our calculations. That is to say, we're applying that same conditional logic across the entire column of the data frame.
+
+```{r, message=F, warning=F}
+library(tidyverse)
+
+# data for examples
+data <- tibble(
+  ID = 1:10,
+  BMI = c(16, 20, 24, 26, 28, 32, 36, 38, 42, 45),
+  insurance = sample(c("Kaiser", "Blue Cross Blue Shield", "Medicare", "SHIP"), 10, replace = TRUE)
+)
+```
+
+Here's an example where we use the same conditional logic to determine if an insurance value is "SHIP."
+
+```{r}
+if_else(data$insurance == "SHIP", "yes", "no")
+```
+
+We can use this in a mutate call as well. Many `dplyr` functions are usable both inside and outside of a pipe call.
+
+```{r}
+data %>%
+  mutate(ship_insurance = if_else(insurance == "SHIP", "yes", "no")) %>%
+  select(insurance, ship_insurance)
+```
+
+### case_when()
+
+Another function, which has the same underlying logic, is called [`case_when()`](https://dplyr.tidyverse.org/reference/case_when.html). If you are familiar with SQL, `CASE WHEN THEN` is equivalent: Each case is evaluated sequentially and the first match for each element determines the corresponding value.
+
+We can use `case_when()` to categorize BMI into categories.
+
+```{r}
+data_categ <- data %>%
+  mutate(BMI_categ = case_when(
+    BMI < 18.5 ~ "Underweight",
+    BMI >= 18.5 & BMI < 25 ~ "Normal weight",
+    BMI >= 25 & BMI < 30 ~ "Overweight",
+    BMI >= 30 & BMI < 35 ~ "Obesity class I (Moderate)",
+    BMI >= 35 & BMI < 40 ~ "Obesity class II (Severe)",
+    # BMI >= 40 ~ "Obesity class III (Very severe or Morbid)",
+    TRUE ~ "Obesity class III (Very severe or Morbid)"
+  )) %>%
+  select(BMI, BMI_categ)
+
+data_categ
+```
+
+### na_if()
+
+One last function is `na_if()`, which allows you to convert specified values to `NA`. Similar to the SQL equivalent of `NULLIF`.
+
+If, for some reason, we wanted to `NA` all of the Blue Cross Blue Shield values, we could use `na_if()`.
+
+```{r}
+data %>%
+  mutate(insurance_na = na_if(insurance, "Blue Cross Blue Shield")) %>%
+  select(insurance, insurance_na)
+```
+
+## One-to-one remapping
+
+[`recode()`](https://dplyr.tidyverse.org/reference/recode.html) is a useful function to replace numeric values based on their position or their name, and character or factor values only by their name.
+
+Using the previously created `data_categ` object, we can recode the BMI categories into numeric groups.
+
+```{r}
+data_categ %>% 
+  mutate(BMI_categ2 = recode(
+    BMI_categ,
+    "Underweight" = "Group 1", 
+    "Normal weight" = "Group 2", 
+    "Overweight" = "Group 3",
+    "Obesity class I (Moderate)" = "Group 4",
+    "Obesity class II (Severe)" = "Group 5",
+    "Obesity class III (Very severe or Morbid)" = "Group 6")
+)
+```
+
+## Dropping rows
+
+Sometimes we just need to get rid of bad rows or data we don't need.
+
+```{r}
+# let's add some NA values to our data
+data_na <- data %>%
+  mutate(ID = na_if(ID, ID == 1),
+         insurance = na_if(insurance, "Kaiser"))
+
+data_na
+```
+
+We'll want to filter out these data and one way is with `filter()`. As a reminder of how this functions works:
+
+```{r}
+data_na %>% filter(!is.na(insurance))
+```
+
+Another useful function we could use is [`drop_na()`](https://tidyr.tidyverse.org/reference/drop_na.html), which drops any row with missing values. It's a powerful function that you want to use carefully.
+
+```{r}
+data_na %>% drop_na()
+```
+
+Notice how we dropped *any* row with an NA? What if we only wanted to drop rows with a missing `ID` information and NOT missing `insurance` information. We can specify which column to look for `NA`'s.
+
+```{r}
+data_na %>% drop_na(ID)
+```

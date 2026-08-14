@@ -1,0 +1,20 @@
+/*-- scss:defaults --*/
+
+// fonts
+$font-family-sans-serif: 'Lucida Sans','Droid Serif', 'Palatino Linotype', 'Book Antiqua', Palatino, 'Microsoft YaHei', 'Songti SC', serif !default;
+
+// colors
+$body-color: #23373B;
+
+$link-color: #003262;
+
+// headings
+$presentation-heading-font: 'Lucida Sans','Droid Serif', 'Palatino Linotype', 'Book Antiqua', Palatino, 'Microsoft YaHei', 'Songti SC', serif !default;
+$presentation-heading-color: #FDB515 !default;
+
+/*-- scss:rules --*/
+
+.reveal .slide blockquote {
+  border-left: 3px solid $text-muted;
+  padding-left: 0.5em;
+}

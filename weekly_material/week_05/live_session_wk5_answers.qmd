@@ -1,0 +1,321 @@
+---
+title: "Live Session - Week 5"
+format: html
+editor: visual
+---
+
+## Live Session - Week 5
+
+Goals:
+
+-   Project
+
+    -   Overview
+
+    -   Strategies for collaboration
+
+-   Tidying data exercise
+
+## Project
+
+-   Overview
+
+    -   Goals are:
+
+        -   work collaboratively on a "real-life" question
+
+        -   use what you have learned to translate data into something that guides decision-making and action
+
+    -   Scenarios
+
+        -   Each utilize 3+ publicly available datasets to answer a question
+
+        -   Require cleaning, aggregating, and creating new fields
+
+        -   Each will have some specific instructions pertaining to cleaning and new variables, but there is also room for creativity and choosing data elements of interest
+
+        -   No statistical testing is required, focus is more on the data tidying
+
+    -   Milestones
+
+        1.  Create group repository and choose scenario (9/29)
+        2.  Import data into R and explore it (due 10/6)
+        3.  Tidy your 3+ datasets and create new variables (due 11/10)
+        4.  Join datasets and create visualizations (due 11/24)
+        5.  Optional draft of final report for input (due 12/1)
+        6.  Final product published on rpubs (due 12/14)
+
+-   Collaboration techniques
+
+    -   Github does not work as seamlessly as Google Docs, and it is possible to have a "merge conflict" when multiple people are working on same script
+
+        -   If this happens, do not panic! We will provide instructions to resolve.
+
+        -   Leave extra time before deadlines in case this happens
+
+    -   How to avoid merge conflicts?
+
+        -   'Pull' from repo when you log on to start working & 'Push' when you are done for the day (even if work is still in-progress)
+
+        -   Coordinate with other team members around when you are working on the project
+
+        -   If working at the same time as someone else, work on different parts of the same file
+
+            -   Conflicts often happen when working in the same area of a script, or if two people both add something to the end
+
+    -   General strategies
+
+        -   Communication is key
+
+        -   Work off a well-organized Qmd/Rmd - have a chunk for each step and name each chunk (ex: setup, import_df1, import_df2, etc); have each group member work on different chunks
+
+        -   Utilize "sandbox" scripts for each team member to develop and test code before adding to the shared script
+
+```{r df1_import}
+#Lauren will work on things in this chunk
+
+
+```
+
+```{r df2_import}
+#Maddy will work on things in this chunk
+
+```
+
+## Exercise: Tidying data
+
+##### Loading in tidyverse library
+
+**Note:** the **tidyverse** package includes all of the **dplyr**, **tibble**, **ggplot2**, **forcats**, **stringr**, **readr**, **purr**, and **tidyr** packages. Therefore, you will not need to call those individual packages if you call in the tidyverse package.
+
+```{r setup}
+
+library(tidyverse)
+
+```
+
+#### Importing a file
+
+Import a dataset from the California Health and Human Services Open Data Portal (CHHS ODP) on COVID vaccination. The primary purpose of the CHHS ODP is to collect health related data in California and to make this information available to the public.
+
+```{r import}
+# creating a file path to directly import a csv from the internet
+file_path <- "https://data.chhs.ca.gov/dataset/e283ee5a-cf18-4f20-a92c-ee94a2866ccd/resource/130d7ba2-b6eb-438d-a412-741bde207e1c/download/covid19vaccinesbycounty.csv"
+
+# import full file to see what it looks like
+vaccine_full <- read_csv(file_path)
+
+```
+
+#### Quick exploration
+
+-   Structure of dataset/table
+
+-   Unique county names
+
+-   Distribution of dates reported
+
+```{r}
+# first 6 rows of the dataset
+head(vaccine_full)
+
+# structure of dataset
+str(vaccine_full)
+
+# Unique county names - returns a list of values 
+unique(vaccine_full$county)
+
+unique(vaccine_full$california_flag)
+```
+
+After taking a closer look at the raw data and seeing that it is a very large dataset, we decide that we only need to keep columns that are important for our analysis because it is a best practice to only use the data that you need. Using minimally necessary data speeds up data processing because it takes up less memory storage.
+
+#### TIDYING COLUMNS (QUESTIONS 1, 2, & 3)
+
+We'd like this dataset to only include the following columns:
+
+-   county - character
+
+-   cumulative_fully_vaccinated - double \[completed primary series\]
+
+-   cumulative_up_to_date_count - double \[received an updated vaccine based on CDC recommendations\]
+
+-   administered_date - date
+
+##### Question 1
+
+Select the columns listed above using methods/functions from **Base R**.
+
+```{r q1}
+# subsetting columns using Base R
+vaccine_columns_1 <- vaccine_full[ ,c("county", 
+                                      "cumulative_fully_vaccinated", 
+                                      "cumulative_up_to_date_count", 
+                                      "administered_date")]
+```
+
+##### Question 2
+
+After subsetting your columns using Base R, try using **tidyverse** code to subset your columns.
+
+```{r q2}
+# subsetting columns using dplyr
+vaccine_columns_2 <- select(vaccine_full, c("county", 
+           "cumulative_fully_vaccinated", 
+           "cumulative_up_to_date_count", 
+           "administered_date"))
+```
+
+##### Question 3 (BONUS)
+
+One other way of subsetting the columns in your dataset is by doing this *during* the initial import step. Try to import the file, however this time only import the following columns and ensure they are the corresponding data types:
+
+-   county - character
+
+-   cumulative_fully_vaccinated - double
+
+-   cumulative_up_to_date_count - double
+
+-   administered_date - date
+
+```{r q3}
+# import only the columns we need
+vaccine_columns_3 <- read_csv(
+  file_path,
+  col_types = cols_only(county = col_character(), 
+                        cumulative_fully_vaccinated = col_double(), 
+                        cumulative_up_to_date_count = col_double(), 
+                        administered_date = col_date()))
+
+#the below also works
+# vaccine_columns_3 <- read_csv(
+#   file_path,
+#   col_select = c("county", 
+#            "cumulative_fully_vaccinated", 
+#            "cumulative_up_to_date_count", 
+#            "administered_date"))
+```
+
+#### **TIDYING ROWS (QUESTIONS 4, 5, & 6)**
+
+Once we have limited the amount of columns in our data set, we now want to subset the rows as well. Therefore your task will be to create a subset with:
+
+-   Only most recent records for vaccinations
+
+-   Only Southern California Counties (Los Angeles, Orange, Santa Barbara, Ventura, San Bernardino, Kern, San Luis Obispo, Imperial, Riverside, San Diego)
+
+*Note:* You can use any one of the vaccine_columns_1, vaccine_columns_2, and vaccine_columns_3 as your starting dataframe. The resulting data frame will be the same.
+
+##### Question 4
+
+Create a new object with the date cutoff and a new vector of county names. Then subset the dataset by date and county using **Base R**. Reference the date object and county vector in the subset step. *Hint:* the which() function may be important.
+
+```{r q4}
+date_cutoff <- max(vaccine_columns_1$administered_date, na.rm=T)
+
+counties <- c("Los Angeles","Orange","Santa Barbara", "Ventura", "San Bernardino","Kern","San Luis Obispo", "Imperial", "Riverside", "San Diego")
+
+# method 1: which
+vaccine_rows_1 <- vaccine_columns_1[which(vaccine_columns_1$county %in% counties & vaccine_columns_1$administered_date == date_cutoff), ]
+
+vaccine_rows_1
+
+```
+
+##### Question 5
+
+Subset the dataset using the **subset** function. *Hint:* Copy the code from Question 4 and change code accordingly.
+
+```{r}
+# method 2: subset function
+vaccine_rows_2 <- subset(vaccine_columns_1, county %in% counties & administered_date== date_cutoff)
+
+vaccine_rows_2
+
+```
+
+##### Question 6
+
+Subset the dataset using a **dplyr** function. *Hint:* Copy the code from Question 5 and change code accordingly (the only difference should be the function itself).
+
+```{r q6}
+# method 3: filter function (tidyverse - dplyr)
+vaccine_rows_3 <- filter(vaccine_columns_1, county %in% counties & administered_date==date_cutoff) 
+
+vaccine_rows_3
+
+```
+
+#### RENAMING, CREATING, AND REORDERING COLUMNS AND INTEGRATING AN IF ELSE STATEMENT (QUESTIONS 7, 8, 9, 10)
+
+##### Question 7
+
+Now that we have limited our data set to 10 rows and 4 variables, rename the following columns names using a **dplyr** function:
+
+-   "cumulative_fully_vaccinated" to "primary_series"
+
+-   "cumulative_up_to_date_count" to "up_to_date"
+
+*Note:* you can use vaccine_rows_1, vaccine_rows_2, or vaccine_rows_3 as your starting data frame
+
+```{r q7}
+vaccine_rename <- rename(vaccine_rows_1, primary_series= cumulative_fully_vaccinated, up_to_date= cumulative_up_to_date_count)
+
+vaccine_rename
+
+```
+
+##### Question 8
+
+Create a new column using a **dplyr** function called *perc_up_to_date* that contains the percent of the population with a primary series that is also up-to-date on additional doses. Round to 2 decimal places.
+
+```{r q8}
+vaccine_perc <- mutate(vaccine_rename, perc_up_to_date = round((up_to_date/primary_series)*100, 2))
+
+vaccine_perc
+
+
+```
+
+##### Question 9
+
+Use a **dplyr** function to assort dateframe in descending order based on the *perc_up_to_date* column.
+
+```{r q9}
+vaccine_arranged <- arrange(vaccine_perc, desc(perc_up_to_date))
+
+vaccine_arranged
+
+vaccine_arranged_2 <- arrange(vaccine_perc, -(perc_up_to_date))
+
+vaccine_arranged_2
+```
+
+##### Question 10
+
+The goal for the state was to reach a level of 25% of the vaccinated population being up to date. Create a new column using a **dplyr** function called *goal_met* that indicates whether or not each county met the goals of the state using the **if_else** function. Use 'Y' to indicate that a level of 25% was reached and 'N' to indicate that it was not reached.
+
+```{r q10}
+vaccine_goal <- mutate(vaccine_arranged, goal_met=ifelse(perc_up_to_date>25,"Y","N"))
+
+vaccine_goal
+```
+
+#### BONUS: TIDYING THE DATA SET IN ONE STEP
+
+##### Bonus
+
+Perform all of the same tidying to arrive at the *vaccine_goal* dataframe in one step. Begin with the *vaccine_full* dataframe. Hint: You will only need to use dplyr functions and a pipe operator will be useful throughout.
+
+```{r bonus}
+
+vaccine_goal_2 <- vaccine_full %>%
+  select(county, cumulative_fully_vaccinated, cumulative_up_to_date_count, administered_date) %>% 
+  filter(county %in% counties & administered_date==date_cutoff) %>%
+  rename(primary_series= cumulative_fully_vaccinated, up_to_date= cumulative_up_to_date_count) %>% 
+mutate(perc_up_to_date = round((up_to_date/primary_series)*100, 2)) %>% 
+  arrange(desc(perc_up_to_date)) %>%
+  mutate(goal_met=ifelse(perc_up_to_date>25,"Y","N"))
+  
+
+```

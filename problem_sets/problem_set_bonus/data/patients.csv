@@ -1,0 +1,52 @@
+﻿patient_id,age,race_ethnicity,gender_identity,height,weight
+1000,54,Asian,woman,163,57
+1001,60,"Hispanic, Latino, or Spanish origin",woman,190,80
+1002,72,Asian,transgender,156,52
+1003,38,African American/Black,man,183,105
+1004,40,African American/Black,woman,162,68
+1005,44,White,woman,169,88
+1006,61,Other,man,196,69
+1007,40,White,man,199,92
+1008,42,"Hispanic, Latino, or Spanish origin",non-binary,164,71
+1009,29,"Hispanic, Latino, or Spanish origin",man,185,102
+1010,51,African American/Black,woman,155,57
+1011,46,African American/Black,woman,184,83
+1012,22,Asian,man,174,90
+1013,32,NA,man,180,58
+1014,61,African American/Black,woman,185,94
+1015,71,White,man,151,62
+1016,26,White,woman,185,60
+1017,72,Asian,woman,191,62
+1018,34,White,man,197,72
+1019,68,White,non-binary,157,66
+1020,31,Other,man,150,50
+1021,24,Asian,woman,183,76
+1022,37,White,woman,149,61
+1023,48,Asian,man,4.82,202.86
+1024,63,White,man,5.22,176.4
+1025,30,"Hispanic, Latino, or Spanish origin",transgender,4.59,284.45
+1026,51,African American/Black,woman,4.72,319.73
+1027,20,African American/Black,woman,5.02,266.81
+1028,70,African American/Black,man,5.15,337.37
+1029,29,NA,woman,5.61,335.16
+1030,32,White,woman,5.28,260.19
+1031,68,White,man,5.94,244.76
+1032,60,Other,woman,5.35,242.55
+1033,64,Asian,woman,6.43,255.78
+1034,68,White,man,5.41,229.32
+1035,48,Asian,woman,5.51,198.45
+1036,48,White,woman,6.1,260.19
+1037,68,"Hispanic, Latino, or Spanish origin",woman,5.74,310.91
+1038,38,African American/Black,transgender,4.86,341.78
+1039,53,African American/Black,woman,5.61,288.86
+1040,60,African American/Black,woman,5.84,308.7
+1041,21,White,man,5.61,264.6
+1042,66,White,man,4.95,251.37
+1043,71,Other,other,4.59,315.32
+1044,22,Asian,man,5.54,310.91
+1045,68,White,woman,5.64,240.35
+1046,40,Asian,woman,5.68,306.5
+1047,69,White,man,4.76,286.65
+1048,71,"Hispanic, Latino, or Spanish origin",man,4.89,220.5
+1049,57,African American/Black,man,5.41,183.02
+1050,60,African American/Black,man,4.95,180.81

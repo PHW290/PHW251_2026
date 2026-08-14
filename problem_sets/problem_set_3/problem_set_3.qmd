@@ -1,0 +1,290 @@
+---
+title: "PHW251 Problem Set 3"
+author: "your name here"
+format: pdf
+---
+
+Submission process: Please submit your assignment directly to Gradescope. You can do this by rendering your file and downloading the PDF to your computer. Then navigate to [Gradescope.com](https://www.gradescope.com) or via the link on BCourses to submit your assignment.
+
+Helpful hints:
+
+-   Render your file early and often to minimize rendering errors! If you copy and paste code from the slides, you are bound to get an error that is hard to diagnose. Typing out the code is the way to smooth rendering. We recommend rendering your file each time after you write a few sentences/add a new code chunk, so you can detect the source of the rendering error more easily. You can render by clicking the blue "Render" arrow in the top menu bar in R studio. This will save you and the teaching team time!
+
+-   To render as PDF, you will need to have LaTeX installed. If you are using the datahub **this should already be there and you don't need to install or update**. If you are not using datahub, there is an R package to handle this! If you don't have LaTeX, you can un-comment and run the following code (note: you only need to do this once, and don't need to load this like other packages).
+
+```{r}
+
+# If you don't have LaTeX installed at all, 
+# uncomment and run the line below in the console
+# install.packages("tinytex")
+# Be sure to comment it again before rendering, it will cause problems
+
+# If you need to update LaTeX or run into rendering issues, 
+# uncomment and run the line below in the console
+#tinytex::reinstall_tinytex()
+# Be sure to comment it again before rendering, it will cause problems
+
+```
+
+-   Please make sure that your code does not run off the page of the rendered PDF. If it does, we can't see your work. To avoid this, have a look at your rendered PDF and ensure all the code fits in the file. When it doesn't, go back to your .qmd file and add spaces (new lines) using the return or enter key so that the code runs onto the next line.
+
+\newpage
+
+### Question 1
+
+In this question you will create a data frame. Below is code for how to do this:
+
+```{r df_example}
+
+# data frame with three columns and three rows
+# notice how we start with the column name and then the row values
+# each column, in this example, has three values
+df_example <- data.frame("column_1" = 1:3, 
+                         "column_2" = c("string_1", "string_2", "2"), 
+                         # here we add an NA value due to missing data
+                         "column_3" = c(NA, "string_3", 50))
+df_example
+```
+
+Now you try! Create a data frame with three columns and the following values:
+
+-   Column 1: ID
+
+    -   1, 2, 3
+
+-   Column 2: NAME
+
+    -   "Pam", "Jim", "Dwight"
+
+-   Column 3: AGE
+
+    -   40, NA, 48
+
+```{r office_df}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 2
+
+With your new data frame created in the previous question, find the following values:
+
+-   length
+
+-   typeof
+
+-   class
+
+```{r office_values}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 3
+
+Create a data frame and a tibble that matches the image below:
+
+```{r show_table}
+# by the way, you can load images into rmarkdown! Cool, right?!
+# here we use the knitr library (though there are multiple ways to load images)
+library(knitr)
+
+# notice that we specify the path to look within the current directory
+# by using the period: .
+# followed by a slash: / to pull the image file
+knitr::include_graphics('./table_replicate.png')
+```
+
+Hint: You may need to load a library for tibbles.
+
+```{r tibble}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 4
+
+What are the key differences between data frames and tibbles?
+
+Why are tibbles preferable?
+
+\newpage
+
+### Question 5
+
+We just found out results for COVID testing and want to add it to our data. Using the tibble you created in Question 3, add the following test results to a new column called "results".
+
+-   101 = NEGATIVE
+-   102 = POSITIVE
+-   103 = NEGATIVE
+-   104 = NEGATIVE
+-   105 = NEGATIVE
+
+```{r covid_results}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 6
+
+You find out there was an error in data collection and subject 102's temperature is actually 98.3, not 97.3. Correct the value in your data frame.
+
+```{r fix_covid_results}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 7
+
+Load the "stds-by-disease-county-year-sex.csv" data set, which is in the data folder.
+
+You can find more information about this data set from the California Open Data Portal:
+
+<https://data.ca.gov/dataset/stds-in-california-by-disease-county-year-and-sex>
+
+```{r import_stds}
+
+# your code here
+
+```
+
+You may have noticed that there are empty cells in the first three rows. Modify your code above (if you haven't already) to remove these rows.
+
+\newpage
+
+### Question 8
+
+Let's explore this STD data set. **Use code** to find the values requested below. Insert R chunks as needed.
+
+How many rows?
+
+```{r}
+
+# your code here
+
+```
+
+How many columns?
+
+```{r}
+
+# your code here
+
+```
+
+What are the column names?
+
+```{r}
+
+# your code here
+
+```
+
+What are the column types?
+
+```{r}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 9
+
+You want to dig deeper into the data and focus on the years 2015 - 2018. Use the `which()` function to index which rows fit this year range and assign the results to a new data frame. To check whether this was done correctly you should expect the following dimensions: 2124 rows x 6 columns
+
+```{r which}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 10
+
+Your colleague is interested in this data set but hasn't setup their git repository. They ask you to help them out by exporting this new data set as a .csv file. Place your output in the /data folder.
+
+As a test, you can try to read in the .csv you created to make sure everything looks correct.
+
+```{r export}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 11
+
+Look up how to use the unique() function and run it on the County column of the STD data set. You should see a total of 59 counties.
+
+```{r unique}
+
+# your code here
+
+```
+
+You decide to focus on one county. Subset your data for one county of your choice.
+
+```{r county_subset}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 12
+
+You're very interested in finding the rate of cases per 100,000 population. In your subset data frame (from the previous question), create a new column called "rate" with the calculated values.
+
+Rate = (Cases / Population) \* 100,000
+
+Hint: R allows you to use manipulate variables within a data frame to calculate new values so long as the rows and data types match up. For example: `df$var3 <- df$var1 + df$var2`
+
+```{r rate}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 13
+
+You see a classmate post the comment below in an Ed Discussion.
+
+I can't get my file to import right:
+
+rm(list = ls())
+
+\# step 1 find file
+
+\# step 2 get file into r folder
+
+\# step 3 check with classmate
+
+co2 \<- read_csv(file = "co2_mm_mlo.csv", skip = 51, header = TRUE, row.names = NULL)
+
+Write a response to the poster and include at least three specific suggestions for them to include to make their response fit guidelines for repeatable examples.
+
+WRITE YOUR ANSWER HERE.
+
+You're done! Please render to pdf and upload to gradescope.

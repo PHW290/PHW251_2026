@@ -1,0 +1,187 @@
+---
+title: "Working with dates in R"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Background
+
+Dates are a special form of numeric that are stored as numeric but display in formats we’re familiar with.
+
+Like Microsoft (January 1st,1900) and SAS (January 1st, 1960), R anchors to a specific date (January 1st, 1970).
+
+Dates in R are stored as the **number of days** before or after 1/1/1970 and date/times are stored as the **number of seconds** before or after 1/1/1970.
+
+Default display format in R is yyyy-mm-dd (‘2020-09-17’).
+
+```{r}
+#| include: false
+if (!require("pacman")) install.packages("pacman")
+library(pacman)
+p_load(lubridate, dplyr, gt)
+
+```
+
+## Dates using Base R
+
+```{r}
+#| echo: true
+
+# Default format is yyyy-mm-dd - if you use that format, you don't have to specify
+# You can assign a date to an object by using a date conversion function and passing a character date string
+# Using base SAS function as.Date()
+
+dob <- as.Date("2020-09-03")
+dob
+
+# Derive the number of days since 1/1/1970 by converting the date object to numeric
+as.numeric(dob)
+#Confirming a different way
+as.numeric(dob) - as.numeric(as.Date("1970-01-01")) 
+
+# if you wanted to add 90 days to a date (or a column of dates):
+as.Date("2020-09-04") + 90
+
+# Converting strings to date or date/time
+
+# If the date is stored in a different format, you just have to include a format parse argument
+
+chr_dates <- c("03/05/1985", "09/21/1972")
+dates <- as.Date(chr_dates, "%m/%d/%Y")
+dates
+
+# Another frequently used function is getting the current date
+Sys.Date()
+
+
+```
+
+## Dates Using Lubridate
+
+For working with dates in this course, we'll generally either use base R functions or the lubridate package functions from the tidyverse.
+
++:-------------------------:+:----------------------------------------------------------------------------------:+
+| ![](images/lubridate.png) | [lubridate reference page](https://lubridate.tidyverse.org/)                       |
+|                           |                                                                                    |
+|                           | [lubridate cheat sheet](https://rawgit.com/rstudio/cheatsheets/main/lubridate.pdf) |
++---------------------------+------------------------------------------------------------------------------------+
+
+```{r}
+
+# Using lubridate package functions (part of the tidyverse)
+
+# Lubridate makes things a little easier in working with dates
+
+dob <- as_date("2020-09-03")
+
+# Using the mdy function easily converts the US date convention (or many other date conventions) to R date
+mdy("02/29/2020")
+
+# if you wanted to add 90 days to a date (or a column of dates) it's basically the same:
+as_date("2020-09-04") + 90
+
+# But if you need to add three months, lubridate makes it much easier
+as_date("2020-09-04") + months(1)
+
+# that works fine, but becomes a little problematic if the added month has fewer days
+as_date("2020-03-31") + months(1)
+
+# the %m+% operator adds a month but reverts back to the last day of the month if the expression yields a non-existent date
+as_date("2020-03-31") %m+% months(1)
+
+# On the off chance you need to convert from numeric:
+
+lubridate::as_date(18239)
+
+# You can also get current time (just have to be careful about time zone) using
+
+with_tz(Sys.time(), tzone = "America/Los_Angeles")
+
+# You can also use the today function and specify the time zone
+
+today(tzone = "Australia/Sydney")
+
+```
+
+## Wrangling with Dates
+
+It makes sense to keep dates as numeric behind the scene, since you'll often want to be able to compare dates, identify number of days, weeks, months, and years between dates, and see if something happened early or later.
+
+```{r}
+# Difference in days
+Sys.Date() - as.Date("2020-09-03")
+
+# which date is earlier, later etc
+Sys.Date() < as.Date("2020-09-03")
+
+# another method of determining days between two dates, but also the option for other measures
+as.numeric(difftime(Sys.Date(), as.Date("2020-09-03"), units = "days"))
+as.numeric(difftime(Sys.Date(), as.Date("2020-09-03"), units = "hours"))
+
+# If you need to extract a date part out of a date object:
+test <- as_date("1999-04-02")
+day(test)
+month(test)
+year(test)
+
+# day of the week
+wday(test, label = TRUE, abbr = TRUE)
+
+# day of the year (julian day)
+yday(test)
+
+# key time measure for public health built into lubridate!
+epiweek(test)
+
+```
+
+You can also sort and join (next week) a dataset by dates more efficiently because it has numeric properties. As well as querying the most recent even in a dataset, grouped by people.
+
+When you import dataset, most packages will make an attempt to guess that a column contains a date and automatically convert. But for the sake of learning how to manually manipulate, we'll use base R import
+
+```{r}
+
+
+cdcr_nodt <- read.csv("https://raw.githubusercontent.com/datadesk/california-coronavirus-data/master/cdcr-prison-totals.csv", stringsAsFactors = F)
+
+# note: readr::read_csv will guess the column data types, so you wouldn't need to convert if you used read_csv.
+str(cdcr_nodt)
+# In a dataset with dates as character, convert to date 
+
+cdcr_nodt$date_mod <- ymd(cdcr_nodt$date) #as_date would also work
+
+# Getting the most recent date and earliest date
+max(cdcr_nodt$date_mod)
+min(cdcr_nodt$date_mod)
+
+# and epi week
+
+cdcr_nodt$epiwk <- epiweek(cdcr_nodt$date_mod)
+cdcr_nodt$year <- year(cdcr_nodt$date_mod)
+
+cdcr_epiwk <- cdcr_nodt |>
+  filter(year == max(year) - 1) |>
+  group_by(year, epiwk) |>
+  summarize(cases = sum(confirmed_cases)) |>
+  ungroup() |>
+  as.data.frame()
+str(cdcr_epiwk)
+
+bind_rows(slice_head(cdcr_epiwk, n=5), 
+          slice_tail(cdcr_epiwk, n=5)) |> 
+  gt(auto_align = TRUE) |>
+  tab_header(
+    title = "CDCR Cases by Epi Week",
+    subtitle = "First and Last 5 weeks displayed"
+  ) 
+
+
+```

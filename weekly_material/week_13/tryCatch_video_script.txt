@@ -1,0 +1,27 @@
+Introduction to tryCatch()
+
+We'll be diving into the tryCatch() function in R. It's a key component when it comes to exception handling. Now, you might wonder, what do we mean by 'exception handling'? It's about how we deal with unexpected problems in our code - be it errors or warnings. The beauty of tryCatch() is that instead of letting an entire script fail when it encounters an issue, it provides us with tools to address the problem gracefully and keep our code running.
+
+Structure of tryCatch()
+
+Let's look at the basic structure of tryCatch(). At its core, it consists of a block of code that might produce an error or warning, and a subsequent block that specifies what to do if such an error does occur.
+
+Practical Example - Calculating Averages
+
+Imagine we've written a function named weekly_average() that's designed to calculate the weekly average of certain values. This function generally works well. However, when presented with unusable data, like all missing values, it can run into issues. Let's see it in action.
+
+Adding Informative Error Handling
+
+When fed with all missing values, our function returned NaN, which indicates 'Not a Number'. While we, as seasoned developers, can guess that it's likely due to a division by zero, it's not very informative. By introducing tryCatch(), we can make this error message much clearer and more instructive. And here, we've added a stop() function which halts the current operation and produces an error. This error is then caught by our tryCatch() and a clearer message is displayed.
+
+Another Practical Example - Fetching Data
+
+Fetching data from the web is a common operation in data analysis. But URLs can break or servers might go down, leading to potential errors in our script. With tryCatch(), we can handle such issues gracefully.
+
+Demonstration of Data Fetching
+
+Here's our function, named fetch_data, designed to retrieve data from a given URL. We've added tryCatch() to handle any potential issues. For demonstration purposes, we'll use a valid URL to show that our function works, and then an invalid URL to show how our function handles errors.
+
+Conclusion
+
+In both the examples we discussed today, tryCatch() served as a safety net, ensuring that our R scripts run smoothly even when faced with unexpected issues. It's an invaluable tool for anyone looking to write robust and resilient R code. Always remember, in the world of coding, it's not just about getting things to work – it's also about handling when things don't work as expected.

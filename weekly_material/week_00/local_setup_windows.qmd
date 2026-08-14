@@ -1,0 +1,39 @@
+---
+title: "Local R and R Studio Setup - Windows"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Installing R
+
+First, you will need to install R on your computer.
+
+1.  Download R from [CRAN](https://cran.rstudio.com). You will need to select the Windows link, and then "base" link on the next page (circled below). Then click "Download R-X.X.X for Windows".
+
+![](images/CRAN_windows.png){fig-align="center"}
+
+2.  In your downloads, double click to open the new file that starts with "**R-**" and ends in "**.exe**".
+
+3.  Click through the various steps of the installer. You should be fine with the default options. This will complete the install of R.
+
+## Installing RStudio
+
+Next, you will need to install RStudio on your computer.
+
+1.  Download RStudio Desktop from the [Posit website](https://posit.co/download/rstudio-desktop/). *Reminder: RStudio and Posit are the same thing, RStudio the company is just in the process of being re-branded as Posit so you will see both names for now.*
+2.  In your downloads, double click to open the new file that starts with "**RStudio**" and ends in "**.exe**".
+3.  Click through the various steps of the installer. You should be fine with the default options. This will complete the install.
+
+## Updating R and RStudio
+
+If you are continuing to use R on your own computer, you will need to somewhat regularly update R and RStudio (every few months is a good goal). Updates to R are needed to maintain compatibility with package updates, and RStudio continues to regularly add new helpful features.
+
+The easiest way to complete these updates is to just follow the above steps again, as if you didn't already have R and RStudio installed! *Note: If you are prompted, please select to "replace" the previous version of R and RStudio on your computer.*

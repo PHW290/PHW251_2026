@@ -1,0 +1,167 @@
+---
+title: "Function Basics"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+### What are functions?
+
+Functions are modules of code that accomplish a specific task. Functions usually take in some sort of data structure (value, vector, dataframe etc.), process it, and return a result.
+
+Nearly everything you do in R relies on the use of functions. Functions are available from:
+
+-   Base R - thousands of functions are readily available to use in R
+
+-   Packages - every R package is comprised of additional functions created by the package authors. Packages are great places to look for functions
+
+-   Custom - Users (you!) can create functions that meet your very specific needs. We will cover a simple example below and more complex examples later in the course.
+
+### What are functions used for?
+
+In short, functions are used for almost everything in R!
+
+Some common uses include:
+
+-   Creation of new objects - vectors, lists, data frames, visualizations
+
+-   Operations on objects - creating a new column, calculations
+
+-   Applying logic
+
+-   Summarize or describe existing objects
+
+### What is the structure of a function?
+
+Understanding the basic structure of a function is important, but becomes more relevant once creating your own functions.
+
+**Basic structure:**
+
+**function_name** \<- function**(arg1 = 1, arg2 = "Y", ...)** {
+
+   **Function body** 
+
+**}**
+
+-   function_name - should be something short yet descriptive
+
+-   arguments (arg1, arg2, etc.) - arguments that are required in order to effectively use the function. Some arguments may be optional, and some functions may not require any arguments.
+
+    -   Common use of arguments is to identify the object that you are operating on (vector, list, data frame, column, etc.)
+
+    -   Other arguments may be helpful for specifying how the function works (like "options")
+
+    -   Many functions will have default values for each argument so that it runs even if not all arguments are defined
+
+-   function body - this will include R code that is to be run when the function is called
+
+    -   This code should be fully self-contained - meaning it does not rely on any previously run code to be successful
+
+    -   If there are arguments, they will be referenced within the code chunk
+
+### How are functions called (or used)?
+
+Some functions don't require any arguments, or have default values that don't need to be changed.
+
+**function_name()**
+
+Some will require argument values to be specified.
+
+**function_name(arg_1= x, arg_2 = y)**
+
+**function_name(x, y)**
+
+The functions above will both print results straight to the console. However, the returned value can also be assigned to a new object:
+
+**new_object \<- function_name(arg_1= x, arg_2 = y)**
+
+### Examples - using functions in base R:
+
+Some frequently used functions:
+
+-   list()  - create a list
+
+-   c()  - create a vector
+
+-   class() - what kind of object is it?
+
+-   typeof() - what is the object’s data type?
+
+-   length() - how long is the object?
+
+### Example - using a function in base R:
+
+Use seq() to generate a numeric sequence from 1 to 20
+
+```{r}
+#first let's learn a bit more about the seq function
+?seq
+
+#what happens if we don't specify an argument
+seq()
+
+#try with arguments
+seq(from=1, to=20, by=1)
+
+seq(from=1, to=20, by=2)
+
+seq(from=1, to=20, length.out=10)
+
+a <- 2
+b <- 40
+
+new_seq <- seq(from=a,to=b,by=6)
+new_seq
+
+#let's use some functions to decribe our new object
+typeof(new_seq)
+class(new_seq)
+summary(new_seq)
+```
+
+### Example - creating a simple function:
+
+```{r}
+#create a function
+add_together <- function(value1 = 1, value2 = 2){
+  value1 + value2
+}
+
+#use function
+add_together()
+
+add_together(value1 = 200, value2 = 34)
+
+add_together(200,34)
+
+add_together(value1 = 200)
+```
+
+### 
+
+Additional resources for learning about specific functions
+
+-   Built in RStudio help
+
+-   typing ?\_keyword\_ into the console
+
+-   Google/online resources
+
+-   rdocumentation.org
+
+    -   [Example for seq()](https://rdocumentation.org/packages/base/versions/3.6.2/topics/seq)
+
+-   Functions from package libraries
+
+    -   Example: read_delim from readr package
+
+        -   [Package documentation](https://readr.tidyverse.org/reference/read_delim.html)
+
+        -   [rdocumentation.org](https://www.rdocumentation.org/packages/readr/versions/1.3.1/topics/read_delim)

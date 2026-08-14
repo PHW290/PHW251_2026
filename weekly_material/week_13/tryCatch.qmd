@@ -1,0 +1,110 @@
+---
+title: "tryCatch()"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+`tryCatch()` is a fundamental function in R used for exception handling. We can think of `tryCatch()` as mechanism to handle potential errors or warnings *gracefully*. Rather than a script failing or stopping execution when an error occurs, `tryCatch()` allows the script to continue running, providing alternative actions or information to the user.
+
+There are a few components that can make up a `tryCatch()` function. Here's the most common usage.
+
+```{r, eval=F}
+tryCatch({
+  # Code that might produce an error or warning
+}, error = function(e) {
+  # What to do if an error occurs
+})
+```
+
+Let's say we wrote a function `weekly_average()` that calculates a weekly average of cases.
+
+```{r}
+weekly_average <- function(data) {
+  avg <- sum(data, na.rm = TRUE) / sum(!is.na(data))
+  return(avg)
+}
+```
+
+Our function works great...
+
+```{r}
+daily_cases <- c(50, 60, 55, NA, 52, 58)
+weekly_average(daily_cases)
+```
+
+...until we feed in unusable data.
+
+```{r}
+daily_cases <- c(NA, NA, NA, NA, NA, NA)
+weekly_average(daily_cases)
+```
+
+The value, `NaN` isn't very informative of what occurred, but we can deduce it's because we tried a division by zero.
+
+Adding a `tryCatch()` can make this error more informative. You'll notice we have also used `stop()`, which will end the current execution as an error, which is then fed into the `function(err)` and printed out as a message.
+
+```{r}
+library(httr)
+
+weekly_average <- function(data) {
+  tryCatch({
+    # If all values are NA, this will cause a division by zero error
+    avg <- sum(data, na.rm = TRUE) / sum(!is.na(data))
+    if (is.nan(avg)) stop("Division by zero error due to all NA values.")
+    return(avg)
+  }, error = function(err) {
+    message("Error encountered: ", err$message)
+    return(NA)  # Return NA for weeks with problematic data
+  })
+}
+
+weekly_average(daily_cases)
+
+```
+
+Here's another example where we want to pull data from a URL. However, URLs sometimes break or the server might be down. Using `tryCatch()`, we can handle such potential errors and provide informative feedback.
+
+Since we can't easily replicate a broken URL, we've used an incorrect URL to demonstrate the same outcome.
+
+```{r, warning=F, message=F}
+# Function to fetch data from a URL using tryCatch()
+fetch_data <- function(url) {
+  
+  response <- tryCatch({
+    # Try to fetch the data
+    resp <- GET(url)
+    return(content(resp, "text"))
+    
+  }, error = function(err) {
+    message("Error encountered: ", err$message)
+    return(NULL)  # Return NULL if there's an error
+  })
+  
+  return(response)
+}
+
+```
+
+Works!
+
+```{r}
+# Test the function
+url_valid <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data"
+
+data_valid <- fetch_data(url_valid)
+```
+
+Does not work, but does not prevent the script from continuing.
+
+```{r}
+url_invalid <- "https://invalid-url.xyz/data.csv"
+data_invalid <- fetch_data(url_invalid)
+```

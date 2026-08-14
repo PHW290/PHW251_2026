@@ -1,0 +1,613 @@
+---
+title: "Data Types and Objects in R"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Overview
+
+-   Data types
+
+    -   Logical
+
+    -   Character/string
+
+    -   Numeric
+
+    -   Special forms
+
+        -   Dates
+
+        -   Factors
+
+-   Objects
+
+    -   Vectors
+
+    -   Lists
+
+## Objectives
+
+1.  Identify different data types in R
+2.  Understand how knowledge of data types will help you write better R code
+3.  Understand how to use dates and factors
+4.  Learn how to use vectors and lists
+
+## Data Types in R
+
+We'll focus on 4 main types:
+
+| Data Type         | Description                                                                                                                                                                                                                        |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Logical           | True / False                                                                                                                                                                                                                       |
+| Character         | Alphabetic, special characters (!\@#\$%\^&\*, etc.), designated between " " (single quotes also work, but it's better to leave them for situations when a quoted work exists within a string (e.g. "This is 'useful' information") |
+| Numeric (Integer) | Whole numbers between -2,147,483,647 and + 2,147,483,647 (designated in code with the letter L)                                                                                                                                    |
+| Numeric (Double)  | Whole, decimal, or scientific notation - most numbers in R are converted to double                                                                                                                                                 |
+
+### Logical
+
+To assign an object as a logical value use either `TRUE` or `FALSE` or `T` or `F`.
+
+```{r}
+x <- TRUE
+x
+```
+
+```{r}
+y <- T
+y
+```
+
+`True` and `False` aren't recognized.
+
+```{r, error=T}
+z <- False
+```
+
+Any expression comparison in R is effectively a function that returns a logical value.
+
+```{r}
+7 == 14
+7!= 14
+7L == as.double(7) #integer compared to a double
+0 == 0.0000000000000000000000000001
+"Good" == "Bad"
+```
+
+Comparing a vector to another vector (or list to another list) returns a vector of logical values. This kind of evaluation can get very useful later on!
+
+```{r}
+c(1, 2, 5, 7, 9) == c(1, 2, 2, 9, 6)
+```
+
+### Characters
+
+Character data type (aka strings, text) in R include letters, symbols, and can even be numbers.
+
+To create an object as a character you surround the text in "quotes" as follows:\
+
+```{r}
+this_char <- "apple"
+this_char
+```
+
+Can include any characters:
+
+```{r}
+another <- "apple123!@#"
+another
+```
+
+Can also convert from other data types:\
+
+```{r}
+numbers <- as.character(1:10)
+numbers
+```
+
+Be careful though -- if you convert numbers to characters, you'll get odd results when sorted.\
+
+```{r}
+sort(numbers)
+```
+
+### String Manipulation
+
+There are lots of ways to manipulate strings and lots of reasons why you might want to. Here's a few examples of key functions. A few of these functions are part of the [stringr package](https://stringr.tidyverse.org/), which is in the tidyverse. There's a nice [cheatsheet for the stringr functions as well](https://github.com/rstudio/cheatsheets/blob/main/strings.pdf).
+
++---------------------------------+---------+--------------------------------------------------------------------------------------------------------+------------------------------------------------+
+| Function(x = string)            | Package | Description                                                                                            | Example                                        |
++=================================+=========+========================================================================================================+================================================+
+| `substr(x, start, end)`         | Base R  | Pull out a key suffix, prefix, or something in between                                                 | `substr(“sem1_grade”, 1, 4) == “sem1”`         |
++---------------------------------+---------+--------------------------------------------------------------------------------------------------------+------------------------------------------------+
+| `gsub(pattern, replacement, x)` | Base R  | Replace some portion of the string                                                                     | `gsub(“sem1_”, “”, “sem1_grade”) == “grade”`   |
+|                                 |         |                                                                                                        |                                                |
+|                                 |         |                                                                                                        | `gsub(“-”, “_”, “field-name”) == “field_name”` |
++---------------------------------+---------+--------------------------------------------------------------------------------------------------------+------------------------------------------------+
+| `str_to_upper(x)`\              | stringr | Convert to all lower, all UPPER, or Title Case. Really helpful when trying to join datasets by strings | `str_to_upper(“try_this”) == “TRY_THIS”`       |
+| `str_to_lower(x)`\              |         |                                                                                                        |                                                |
+| `str_to_title(x)`               |         |                                                                                                        | `str_to_lower(“tbl_YELLING”) == “tbl_yelling”` |
+|                                 |         |                                                                                                        |                                                |
+|                                 |         |                                                                                                        | `str_to_title(“ALAMEDA CO”) == “Alameda Co”`   |
++---------------------------------+---------+--------------------------------------------------------------------------------------------------------+------------------------------------------------+
+| `str_detect(x, pattern)`        | stringr | Returns a logical depending on whether the pattern exists in the string                                | `clothes <- c("tie", "shirt", "dress")`        |
+|                                 |         |                                                                                                        |                                                |
+|                                 |         |                                                                                                        | `str_detect(clothes, "e") == TRUE FALSE TRUE`  |
++---------------------------------+---------+--------------------------------------------------------------------------------------------------------+------------------------------------------------+
+
+```{r}
+library(stringr)
+
+substr("sem1_grade", 1, 4)
+
+gsub("sem1_", "", "sem1_grade") 
+gsub("-", "_", "field-name") 
+
+str_to_upper("try_this") 
+str_to_lower("tbl_YELLING")
+str_to_title("ALAMEDA CO") 
+
+clothes <- c("tie", "shirt", "dress")
+
+str_detect(clothes, "e") 
+```
+
+### Numeric
+
+Computers can store and retrieve numbers more efficiently than we can. There are two main types of numbers in R. For the most part, the differences don't matter a whole lot as R will convert types to match what is needed.
+
+However, it's still good to know the difference.
+
+**Integer -** Take up less memory and can sometimes be preferred for indexing and iterating through a sequence.
+
+**Double -** Are best for calculations and displaying results.
+
+### Special Forms
+
+#### Dates
+
+Dates are a special form of numeric that are stored as numeric but display in formats we're familiar with. Similar to how Microsoft (1/1/1990) and SAS (1/1/1960) anchor their dates, R anchors to a specific date (1/1/1970).
+
+-   Dates are stored as the number of days before or after 1/1/1970
+
+-   Date/times are stored as the number of seconds before or after 1/1/1970
+
+The default display format in R is `yyyy-mm-dd` (e.g. `2020-09-17`).
+
+Let's walk through some examples of dates, starting with a base R function `Sys.Date()` that returns the current date and `Sys.time()` which returns the current date AND time.
+
+```{r}
+Sys.Date()
+Sys.time()
+```
+
+We're going to use the tidyverse's [lubridate package](https://lubridate.tidyverse.org/) to work with dates. There's a [huge selection of useful functions](https://rawgit.com/rstudio/cheatsheets/master/lubridate.pdf). We'll cover a few!
+
+```{r, warning=F, message=F}
+library(lubridate)
+```
+
+We can read in different types of date formats using any variation of **y**ear, **m**onth, **d**ay functions: `ymd()`, `ydm()`, `mdy()`...you get the idea! These functions will return the standard `yyyy-mm-dd` format by parsing the strings you provide.
+
+```{r}
+ymd("1865/06/19")
+mdy("July 20, 1969")
+dmy("8/03/1917")
+```
+
+With R, we can easily manipulate time.
+
+```{r}
+# 90 days from today
+Sys.Date() + 90
+
+# 100 days ago
+Sys.Date() - 100
+
+# 12 miliseconds into the future
+Sys.time() + 12 / 1000
+```
+
+But what if we want to modify based on a window of time, such as a day, month, or year? Not every month has the same number of days and writing out `365` each time for a year can get messy. Using lubridate functions we can more clearly calculate these time frames.
+
+```{r}
+# 3 days later
+Sys.Date() + days(3)
+
+# 5 months before
+Sys.Date() - months(5)
+
+# 2 years later
+Sys.Date() + years(2)
+```
+
+We can also extract date info easily too.
+
+```{r}
+# grab the day from a date
+day(Sys.Date())
+wday(Sys.Date(), label = TRUE, abbr = TRUE)
+
+# grab the month from a date
+month(Sys.Date())
+
+# grab the year from a date
+year(Sys.Date())
+```
+
+Super useful for future epidemiologists is determining the epiweek!
+
+```{r}
+epiweek(Sys.Date())
+```
+
+Dates are very useful tools to help organize data.
+
+```{r}
+df <- data.frame(date = c("1917-03-08", "1969-07-20", "1865-06-19"))
+
+# max date
+max(df$date)
+
+# min date
+min(df$date)
+
+# ordering by dates
+sort(df$date)
+```
+
+#### Factors
+
+Factors are another special form of numeric that are stored as numeric but display as text strings. In the past, factors efficiently stored character strings as integers, saving memory. Recent versions of R automatically convert character data to factors behind the scenes when needed, allowing us to not worry about memory.
+
+Factors can be useful and even necessary in specific situations:
+
+-   Certain analytic packages require factors
+
+-   Labeling axes in visualizations
+
+For the most part, the benefits outweigh the drawbacks of factors. For example, if you think you're operating with a character field but it's actually a factor, you might have difficulty debugging.
+
+```{r}
+x <- factor(c("apple", "orange", "apricot", "apple"),
+            levels = c("apple", "orange", "apricot"))
+x
+
+as.numeric(x)
+```
+
+## Objects
+
+![](images/r_object_data_types.jpg)
+
+### Vectors
+
+Vectors are one dimension and a single data type. We can create vectors with the `c()` function.
+
+```{r}
+c(2, 3, 4, 5, 6, 45, 2)
+```
+
+Or create a range of numeric values using `start:end`.
+
+```{r}
+1:10
+```
+
+Or a sequence with `seq()`.
+
+```{r}
+# every 2 numbers up to 10
+seq(2, 10, 2)
+```
+
+We can also put string's in vectors, but if we combine numeric and strings together the numeric values are converted into strings. This occurs because R requires vectors to be of one type.
+
+```{r}
+c(1, 2, 3, "I am a string")
+```
+
+Using vectors, we can create columns in data frames.
+
+```{r}
+testing_pos <- data.frame(
+  county = c("Alameda", "Contra Costa", "Marin"),
+  total_tests = c(500, 745, 832),
+  pos_tests = c(43, 32, 30)
+)
+```
+
+We also have the ability to compare vectors to each other to find matches using the `%in%` operator.
+
+```{r}
+# two list of counties
+v_county <- testing_pos$county
+county_list <- c("San Diego", "Marin")
+
+# let's see how many counties in v_county are in county_list
+v_county %in% county_list
+```
+
+Vector also can be named.
+
+```{r}
+named_v <- c("day1" = "Monday", "day2" = "Tuesday", "day3" = "Wednesday" )
+named_v
+```
+
+#### Indexing vectors
+
+There are a few ways to index a vector:
+
+-   integers (positive or negative)
+
+-   logical vectors
+
+-   character vectors / names
+
+-   `which()`
+
+##### Integers
+
+```{r}
+vec <- seq(0, 50, by = 5)
+vec
+
+# grab the 5th element using [brackets]
+vec[5]
+
+# elements 3, 6, 9
+vec[c(3, 6, 9)]
+
+# all elements except 3, 6, 9
+vec[c(-3, -6, -9)]
+
+# all elements except 5, 6, 7
+vec[-5:-7]
+```
+
+##### Logical vectors
+
+```{r}
+vec <- 5:10
+vec
+
+# keep only TRUE indexes
+vec[c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE)]
+
+# by condition
+vec[vec > 7]
+```
+
+##### Character vectors / names
+
+```{r}
+named_v <- c("day1" = "Monday", "day2" = "Tuesday", "day3" = "Wednesday" )
+named_v
+
+# see names of elements
+names(named_v)
+
+# index by name
+named_v["day1"]
+
+# index by multiple names
+named_v[c("day1", "day2")]
+```
+
+##### which()
+
+```{r}
+vec <- 95:110
+vec
+
+# find position of values that match the condition
+which(vec > 99)
+
+# return the elements that match the indexes
+vec[which(vec > 99)]
+```
+
+#### Modifying vectors
+
+We have a few ways to modify vectors too:
+
+-   Change element
+
+-   Delete
+
+-   Combine vectors
+
+-   Calculate
+
+```{r}
+# create multiple vectors to use below
+v1 <- c(2,7,3,21,98)
+v2 <- 1:5
+v3 <- c("a","b","c","d","e")
+v4 <- c(1,3)
+```
+
+##### Change element
+
+```{r}
+# change an element
+v1[5] <- 94
+v1
+
+# add an element
+v1[6] <- NA
+v1
+
+```
+
+##### Delete
+
+```{r}
+# delete an element
+v1[-6]
+# or
+v1[1:5]
+
+# clear vector values
+# create vector to delete
+test <- v1
+
+# clear values from vector
+test <- NULL
+```
+
+##### Combine vectors
+
+```{r}
+# combine vectors 
+# same type
+v1_2 <- c(v1,v2)
+v1_2
+
+# numeric and character, combine to character
+v1_3 <- c(v1,v3)
+v1_3
+```
+
+##### Calculate
+
+```{r}
+# adding vectors of different lengths will work - the short vector values will be recycled to 
+# align with length of longer vector
+v1+v4
+
+# subtract 
+v1-v2
+
+# multiply
+v1*v2
+
+# absolute value
+v_abs <- c(-1,-4,3,7)
+abs(v_abs)
+```
+
+### Lists
+
+List are ordered collections of objects
+
+-   One object
+
+-   Multiple objects
+
+-   Or even a list within a list (nested lists)
+
+Let's create our first list.
+
+```{r}
+list1 <- list("dog",375)
+list1
+```
+
+We can go further by naming the list.
+
+```{r}
+named_list <- list(pet="dog",number=375)
+named_list
+```
+
+#### Complex lists
+
+With lists, we can mix up data types: data frames, character vectors, matrix, another list.
+
+```{r}
+testing_pos <- data.frame(
+  county = c("Alameda", "Contra Costa", "Marin"),
+  total_tests = c(500, 745, 832),
+  pos_tests = c(43, 32, 30)
+)
+
+named_v <- c("day1" = "Monday", "day2" = "Tuesday", "day3" = "Wednesday" )
+
+list1 <- list("dog",375)
+
+# data frame, named vector, list
+big_list <- list(testing_pos, named_v, list1)
+str(big_list)
+
+# character vector, matrix, list
+multi_list <- list(
+  "Weekend" = c("Sat","Sun"), 
+  matrix(c(3,9,6,12,-3,21), nrow = 2), 
+  list("dog",375))
+
+str(multi_list)
+```
+
+#### Indexing lists
+
+Indexing lists is similar to indexing vectors.
+
+```{r}
+named_list <- list(pet="dog", number=375)
+
+# index list
+named_list$pet
+
+# compare single brackets
+named_list[2]
+
+# to double brackets
+named_list[[2]]
+
+# can also return just names
+names(named_list[1])
+
+# indexing in list of list
+multi_list[1]
+multi_list["Weekend"]
+multi_list$Weekend
+
+multi_list[2]
+
+multi_list[3]
+
+multi_list[3][[1]][2]
+```
+
+#### Modifying lists
+
+We can also modify list, very similar to how we modify vectors.
+
+```{r}
+# replace element
+multi_list[3][[1]][1] <- "cat"
+multi_list[3][[1]][1]
+multi_list[3]
+
+# add new element
+multi_list[3][[1]][3] <- "mouse"
+multi_list[3][[1]]
+
+multi_list[4] <- "new"
+multi_list
+
+# remove the last element.
+multi_list[4] <- NULL
+```
+
+If you need to convert a list to a vector, you can use `unlist()`.
+
+```{r}
+list_a <- list(2,4,6,8)
+list_b <- list(1,2,3,4)
+
+vec_a <- unlist(list_a)
+vec_b <- unlist(list_b)
+
+vec_a + vec_b
+```

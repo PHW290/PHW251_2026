@@ -1,0 +1,346 @@
+---
+title: "Functions"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r, include=F}
+library(glue)
+```
+
+# Overview
+
+Review: What is a function?
+
+-   Calling a function
+
+When should you write a function?
+
+Creating a function
+
+-   Your first R function: hello_world()
+-   Scope and environment
+-   Debugging
+-   Function guideline
+
+Use case example
+
+## Objectives
+
+1.  Understand the benefits of functions
+2.  Learn the basic structure of functions in R
+3.  Identify when is a good time to use a function
+
+![](images/functions_meme.jpg){fig-align="center"}
+
+## What is a function?
+
+Functions are a self-contained block of code that performs a specific task or set of instructions. Functions are defined with a unique name and can be called or invoked from other parts of your script to execute its functionality.
+
+### Calling a function
+
+We've been using functions from the start! Let's review the format of calling a function.
+
+```{r, eval=F}
+# format
+package::function(argument1, argument2, ...)
+  
+# example
+dplyr::select(data, columns, options)
+```
+
+Whenever we execute a function we are receiving a value back, an object that R can work with.
+
+## When should you write a function?
+
+"You should consider writing a function whenever you've copied and pasted a block of code more than twice (i.e. you now have three copies of the same code.)" - Hadley Wickham
+
+*Why?*
+
+-   Save time (though the time is saved mostly in the future)
+
+-   Reduce potential errors when you need to edit
+
+-   Code complexity decreases while code elegance increases
+
+## Creating a function
+
+A function is made up of the following:
+
+1.  A unique **name** that provides some insight to the function's purpose.
+2.  A list of inputs or **arguments** that the function receives and uses to create the output.
+3.  Code or **statements** in the body of the function that executes when the function is called.
+
+```{r, eval=F}
+my_function <- function(arg1, arg2, ...) { # <1>
+  statements                               # <2>
+  return(object)                           # <3>
+}
+```
+
+1.  Define name of function and arguments
+2.  Write the code of the function
+3.  Statement to output an object
+
+### Your first R function: hello_world()
+
+We'll write a classic function called `hello_world()` that takes no parameters and returns "Hello world!"
+
+```{r}
+hello_world <- function() { # define your function name and parameters
+  return("Hello world!")
+}
+
+new_var <- hello_world() # call our function to verify the output is accurate
+new_var
+```
+
+We can make the function more complex by providing parameters. Let's add an option of whether to include the current time.
+
+```{r}
+hello_world <- function(tell_date = FALSE) { # we can also set parameters to a default value (TRUE in this case)
+  if (tell_date == FALSE) { # checking value of tell_date
+    value <- "Hello World!" # default value when tell_date == FALSE
+  } else {                  # otherwise assign a different string to value
+    value <- glue::glue('Hello world! Today\'s date is: {format(Sys.time(), "%B %d, %Y")}!!!')
+    # value <- paste0('Hello world! Today\'s date is: ', {format(Sys.time(), "%B %d, %Y")},'!!!')
+  }
+  return(value)
+}
+
+hello_world(tell_date = FALSE)
+
+hello_world(tell_date = TRUE)
+
+hello_world()
+```
+
+### Scope and environments
+
+Functions have what's referred to as a **scope**, which is the accessibility and visibility of objects within a function. The scope determines whether these objects are modifiable throughout the code. Up until now we have typically been working with objects defined in the **global scope,** or variables defined outside of any function.
+
+Global scope variables are accessible by functions.
+
+```{r}
+global_var_scope <- 100
+# rm(global_var_scope) #delete object
+
+scope_example <- function() {
+  return(global_var_scope)
+}
+
+scope_example()
+```
+
+But if you have the same variable name referenced within your function, the **local scope** takes precedence. Local scope is comprised of the variables defined within the function.
+
+```{r}
+global_var_scope <- 100
+
+scope_example <- function() {
+  global_var_scope <- 200 #local scope
+  return(global_var_scope)
+}
+
+scope_example()
+```
+
+You might think "maybe `global_var_scope` was actually modified in the global environment? We can see that's not the case.
+
+```{r}
+global_var_scope
+```
+
+In general, we want to avoid relying on variables in the global environment when writing our functions. **Best practice is to write statements that are self sufficient on the arguments you pass into your function.**
+
+On the flip side, variables we define in our function's local scope are not accessible in the global environment.
+
+```{r, error=T}
+scope_example <- function() {
+  local_scope_var <- 100
+  return(local_scope_var)
+}
+
+scope_example()
+local_scope_var # doesn't exist in the global environment
+
+make_local_global <- scope_example()
+```
+
+It is possible to modify or create global variables with the using `<<-`. However, we do not recommend doing so because your code becomes more difficult to understand, debug, and maintain.
+
+```{r}
+global_var_scope <- 100
+
+scope_example <- function() {
+  global_var_scope <<- 200
+  return(global_var_scope)
+}
+
+scope_example()
+global_var_scope # changed value
+```
+
+### Debugging
+
+Writing functions is all fun and games until your code doesn't do what you want. Your most useful function to use is `print()`.
+
+In this example I am calculating a percent change but receiving the wrong value.\
+$$PercentChange = \frac{{V_2 - V_1}}{{\lvert V_1 \rvert}} \times 100$$
+
+If the case count was 100 and increased to 200, the percent change is 100%. But my function is returning 50%! Can you spot the error?
+
+```{r}
+calc_perc_change <- function(original_value, new_value) {
+  diff <- new_value - original_value
+  divide <- diff / new_value 
+  perc_change <- divide * 100
+
+  return(perc_change)
+}
+
+calc_perc_change(100, 200)
+```
+
+I can add a print statements to help track down where the error may occur.
+
+```{r}
+calc_perc_change <- function(original_value, new_value) {
+  diff <- new_value - original_value
+  print(glue('diff = {diff}'))
+  
+  divide <- diff / new_value
+  print(glue('divide = {divide}'))
+  
+  perc_change <- divide * 100
+
+  return(perc_change)
+}
+
+calc_perc_change(100, 200)
+```
+
+Looks like my `divide` part of the equation is off. With closer inspection I've mistakenly divided by the new value rather than the original value!
+
+```{r}
+calc_perc_change <- function(original_value, new_value) {
+  diff        <- new_value - original_value
+  divide      <- diff / original_value
+  perc_change <- divide * 100
+
+  return(perc_change)
+}
+
+calc_perc_change(100, 200)
+```
+
+### Function guidelines
+
+Functions are written to communicate with computers, but also with humans. Your future self and other people who collaborate with you may need to review your functions one day. Help yourself and others by writing clear code with descriptive comments when needed.
+
+How you name your function is important. Ideally, your function name is short and descriptive of what the function does. If you can't keep the function short, at the very least make sure its purpose is clear.
+
+In general, functions names should be verbs, and arguments should be nouns.
+
+```{r, eval=F}
+# too short name
+f()
+
+# not a verb, but descriptive
+hello_world()
+
+# not a verb, or descriptive
+super_good_function()
+
+# long, but clear
+calculate_missing()
+get_100k_rate()
+```
+
+## Use case example
+
+Let's walk through a scenario where a function will save you time, help you write more concise code, and reduce the amount of errors you may produce.
+
+```{r, message=F, warning=F}
+# load our data and libraries
+library(dplyr)
+library(magrittr)
+library(readr)
+
+covid_masks <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/mask-use/mask-use-by-county.csv")
+
+str(covid_masks)
+```
+
+We want to create a new column that takes the values from the columns NEVER, RARELY, SOMETIMES, FREQUENTLY, ALWAYS in `covid_masks` and categorizes based on a range. Here's one way we can go about this task.
+
+```{r}
+covid_masks$never_cat <- case_when(covid_masks$NEVER <= .2 ~ 1,
+                                   covid_masks$NEVER <= .4 ~ 2,
+                                   covid_masks$NEVER <= .6 ~ 3,
+                                   covid_masks$NEVER <= .8 ~ 4,
+                                   TRUE ~ 5)
+
+covid_masks$rarely_cat <- case_when(covid_masks$RARELY <= .2 ~ 1,
+                                    covid_masks$RARELY <= .4 ~ 2,
+                                    covid_masks$RARELY <= .6 ~ 3,
+                                    covid_masks$RARELY <= .8 ~ 4,
+                                    TRUE ~ 5)
+
+covid_masks$some_cat <- case_when(covid_masks$SOMETIMES <= .2 ~ 1,
+                                  covid_masks$SOMETIMES <= .4 ~ 2,
+                                  covid_masks$SOMETIMES <= .6 ~ 3,
+                                  covid_masks$SOMETIMES <= .8 ~ 4,
+                                  TRUE ~ 5)
+
+covid_masks$freq_cat <- case_when(covid_masks$FREQUENTLY <= .2 ~ 1,
+                                  covid_masks$FREQUENTLY <= .4 ~ 2,
+                                  covid_masks$FREQUENTLY <= .6 ~ 3,
+                                  covid_masks$FREQUENTLY <= .8 ~ 4,
+                                  TRUE ~ 5)
+
+covid_masks$always_cat <- case_when(covid_masks$ALWAYS <= .2 ~ 1,
+                                    covid_masks$ALWAYS <= .4 ~ 2,
+                                    covid_masks$ALWAYS <= .6 ~ 3,
+                                    covid_masks$ALWAYS <= .8 ~ 4,
+                                    TRUE ~ 5)
+```
+
+A tedious bit of work, right? Imagine if we needed to update the range for the categorization. There's 5 instances where we would need to edit the code, providing 5 opportunities for introducing mistakes. A more efficient way is to wrap these repeating calls into a function.
+
+```{r}
+get_mask_cat <- function(mask_column) {
+  value <- case_when(
+    mask_column <= .2 ~ 1,
+    mask_column <= .4 ~ 2,
+    mask_column <= .6 ~ 3,
+    mask_column <= .8 ~ 4,
+    TRUE ~ 5)
+  
+  return(value)
+}
+```
+
+Run our function repeatedly.
+
+```{r}
+#base R
+covid_masks$never_cat  <- get_mask_cat(covid_masks$NEVER)
+covid_masks$rarely_cat <- get_mask_cat(covid_masks$RARELY)
+covid_masks$some_cat   <- get_mask_cat(covid_masks$SOMETIMES)
+covid_masks$freq_cat   <- get_mask_cat(covid_masks$FREQUENTLY)
+covid_masks$always_cat <- get_mask_cat(covid_masks$ALWAYS)
+
+#dplyr
+covid_masks_dplyr <- covid_masks %>%
+  mutate(never_cat_v2 = get_mask_cat(NEVER),
+         rarely_cat_v2 = get_mask_cat(RARELY))
+```

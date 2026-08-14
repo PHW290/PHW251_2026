@@ -1,0 +1,752 @@
+---
+title: "Tables with kable and gt"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r setup}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(gt)
+library(gtExtras)
+
+#Original dataset downloaded from: https://data.chhs.ca.gov/dataset/stds-in-california-by-disease-county-year-and-sex
+filepath <- paste0(getwd(),"/data/stds-by-disease-county-year-sex-2001-2021.csv")
+
+std <- read_csv(filepath) %>%
+  rename_with(~ tolower(gsub(" ","_",.x,fixed=TRUE))) 
+
+
+```
+
+## Creating basic tables in R
+
+Once you have your data loaded into R, cleaned, and tidied, a typical next step may be to want to present that data in a tabular format. You could just print a data frame or tibble to accomplish this, but there are of course some packages in R that help to generate more polished looking tables with minimal effort.
+
+There are many packages and functions that can be used to create tables in R. In this lesson we will cover:
+
+-   kable (part of knitr package)
+
+    -   kableExtra
+
+-   gt
+
+    -   gtextras
+
+## kable
+
+-   kable is a simple table generator
+
+    -   Part of the knitr() package
+
+    -   Specify column names, alignment, very basic formatting
+
+-   kableExtra allows for more customizations to table 
+
+    -   General table styling
+
+    -   Specifications for certain rows and columns
+
+    -   Group rows and columns
+
+    -   Add a footnote
+
+-   Use within both pdf and html outputs
+
+    -   Output will look slightly different based on which type of output
+
+    -   html will have more flexibility
+
+-   Resources
+
+    -   [R Markdown Cookbook, Ch. 10 Tables](https://bookdown.org/yihui/rmarkdown-cookbook/tables.html)
+
+    -   <https://haozhu233.github.io/kableExtra/awesome_table_in_pdf.pdf> 
+
+Let's start with basic kable. There are many arguments that can be added, but we will focus on some of the most common or helpful for our purposes.
+
+![](images/kable1.png)
+
+There's some additional customizations that can be made. Handling of NA's can be specified using the code in the green box below.
+
+![](images/kable2.png)
+
+Let's look at a real example - create a table of STD case rates for males in San Francisco from 2017-2021
+
+```{r table_prep}
+
+#create new dataframe
+std_sf_m <- std %>%
+  filter(county=="San Francisco" & year>=2017 & sex=="Male") %>%
+  select(disease, year, rate) %>%
+  pivot_wider(
+    names_from=disease, values_from=rate
+  ) %>%
+  mutate(year=as.character(year)) 
+
+std_sf_m
+
+#most basic kable call
+kable(std_sf_m)
+
+```
+
+Now that we have a table we want to present, let's try out some of the different customizations in kable:
+
+```{r}
+#format
+kable(std_sf_m, format="pipe")
+
+#booktabs
+kable(std_sf_m,booktabs=T)
+
+#digits
+#using a vector to specify for each column
+kable(std_sf_m, digits=c(0,1,0,1))
+
+#using a single value
+kable(std_sf_m, digits=0)
+
+#row names
+kable(std_sf_m, row.names=T)
+
+#column names
+#use gsub() to apply to all columns
+kable(std_sf_m, col.names=str_to_title(gsub("[.]"," ",names(std_sf_m))))
+
+#feed a vector of column names
+kable(std_sf_m, col.names=c("Year","CT","ES","GC"))
+
+#align
+kable(std_sf_m, align='lccc')
+
+#caption
+kable(std_sf_m,caption="STD Rates among males in San Francisco, 2017-2021")
+
+#format args
+kable(std_sf_m,format.args=list(big.mark=","))
+
+#final table
+kable(std_sf_m,col.names=str_to_title(gsub("[.]"," ",names(std_sf_m))), align='lccc', caption="STD Rates among males in San Francisco, 2017-2021",format.args=list(big.mark=","))
+
+
+```
+
+That final table looks okay, but let's see how we can further customize using the kableExtra package.
+
+## kableExtra
+
+Let's keep customizing our table by expanding from just using kable to also using kableExtra, which is a separate package. One component of kableExtra is kable_styling, which allows for the customization of the overall styling of the table. There are a lot of options of things that can be specified here. So we will just highlight a few:
+
+### kable_styling()
+
++--------------+--------------------------------------------------------------------------------------------+
+| full_width   | T to take full width of page (F to not)                                                    |
++--------------+--------------------------------------------------------------------------------------------+
+| position     | Align whole table to “center”, “left”, or “right” of page (only applies with full_width=F) |
++--------------+--------------------------------------------------------------------------------------------+
+| font_size    | Set font size for full table                                                               |
++--------------+--------------------------------------------------------------------------------------------+
+| fixed_head   | T to fix the table header row on top when scrolling (html)                                 |
++--------------+--------------------------------------------------------------------------------------------+
+| ...and more! |                                                                                            |
++--------------+--------------------------------------------------------------------------------------------+
+
+Let's create a new table that displays STD rates by county and sex for years 2020-2021. To make it easier to demo, I am going to only include 3 counties - Alameda, Contra Costa, San Francisco.
+
+```{r}
+#create data frame of STD rates by county, sex for 2020-2021
+std_kbl <- std %>%
+  filter(county %in% c("Alameda","Contra Costa","San Francisco") & year>=2020 & year <=2021) %>%
+  select(county,sex,disease,year,rate) %>%
+  pivot_wider(names_from=c(disease,year),values_from=rate) %>%
+  data.frame()
+
+#create formatted table
+kable(std_kbl,col.names=c("County","Sex","CT 2020","CT 2021","ES 2020","ES 2021","GC 2020","GC 2021"), caption="STD Rates by county in Alameda, Contra Costa, and San Francisco 2020-2021") %>%
+  kable_styling(full_width=T) %>%
+  # kable_styling(position="left") %>%
+  kable_styling(font_size=10) 
+```
+
+### column_spec() and row_spec()
+
+Additionally, we can specify formatting based on column and/or row locations.
+
+-   Specify column numbers or row numbers, and then provide specifications for text formatting or cell formatting (i.e. background color of cell).
+
+-   Column specifications can be made conditionally. So for example, you could specify that cells with values over 100 have red text while the rest have black.  
+
+![](images/kable_specs.png)
+
+A couple notes on specifications:
+
+-   There are some options to add hover over or image information. We're not going to cover that today, but it's a cool option as well. 
+
+-   There are additional functions that focus on cell and text specifications. These are a bit more complicated to use and don't offer much more than the column and row spec functions presented above, so we are not going to review those.
+
+Let's add some formatting to our columns to emphasize the county names and total rows. Additionally, we will display numbers in red that represent a more than 10% increase from the previous year.
+
+```{r}
+kable(std_kbl, col.names=c("County","Sex","CT 2020","CT 2021","ES 2020","ES 2021","GC 2020","GC 2021"), caption="STD Rates by county in Alameda, Contra Costa, and San Francisco 2020-2021") %>%
+  kable_styling(full_width=F) %>%
+  kable_styling(position="left") %>%
+  kable_styling(font_size=10) %>%
+  column_spec(1, bold=TRUE) %>%
+  # column_spec(2:8, bold=if_else(std_kbl$sex=="Total",TRUE,FALSE,FALSE)) %>%
+  row_spec(c(3,6,9),bold=T) %>%
+  # column_spec(1:2, width="3cm") %>%
+  column_spec(4, color=if_else((std_kbl$Chlamydia_2021-std_kbl$Chlamydia_2020)/std_kbl$Chlamydia_2020>0.1, "red","black","black")) %>%
+  column_spec(6, color=if_else((std_kbl$Early.Syphilis_2021 -std_kbl$Early.Syphilis_2020)/std_kbl$Early.Syphilis_2020>0.1, "red","black","black")) %>%
+  column_spec(8, color=if_else((std_kbl$Gonorrhea_2021 -std_kbl$Gonorrhea_2020)/std_kbl$Gonorrhea_2020>0.1, "red","black","black"))
+```
+
+### Grouping by row and/or column:
+
+In order to further customize a table, there are several functions available that help with grouping data by column or row in order to make it easier to interpret, or just look better. A few of these functions are:
+
++--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| add_header_above() | Add header(s) above to group columns; provide named vector where name equals the header and numeric value equals the number of columns to span.                        |
+|                    |                                                                                                                                                                        |
+|                    |  add_header_above(c(" " = 1, "Group 1" = 2, "Group 2" = 2, "Group 3" = 2)                                                                                              |
++--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| pack_rows()        | Group rows under a sub-label. Supply the name of the group, starting row, and ending row:                                                                              |
+|                    |                                                                                                                                                                        |
+|                    | pack_rows("Group 1", 4, 7)                                                                                                                                             |
++--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| collapse_rows()    | Put repeating cells in columns into multi-row cells                                                                                                                    |
+|                    |                                                                                                                                                                        |
+|                    |  collapse_rows(columns = 1:2, valign = "top")                                                                                                                          |
+|                    |                                                                                                                                                                        |
+|                    | \*Note: at the time of this recording this function is not working correctly, and unfortunately there is not a straightforward alternative to achieve the same outcome |
++--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| add_indent()       | Indent specified rows                                                                                                                                                  |
+|                    |                                                                                                                                                                        |
+|                    | add_indent(c(1, 3, 5))                                                                                                                                                 |
++--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+: Let's experiment with the grouping functions for both columns and rows -
+
+```{r}
+kable(std_kbl,longtable=T,booktabs=T, col.names=c("County","Sex","2020","2021","2020","2021","2020","2021"), caption="STD Rates by county in Alameda, Contra Costa, and San Francisco 2020-2021") %>%
+  kable_styling(full_width=F) %>%
+  kable_styling(position="left") %>%
+  kable_styling(font_size=10) %>%
+  column_spec(1, bold=TRUE) %>%
+  column_spec(2:8, bold=if_else(std_kbl$sex=="Total",TRUE,FALSE,FALSE)) %>%
+  column_spec(4, color=if_else((std_kbl$Chlamydia_2021-std_kbl$Chlamydia_2020)/std_kbl$Chlamydia_2020>0.1, "red","black","black")) %>%
+  column_spec(6, color=if_else((std_kbl$Early.Syphilis_2021 -std_kbl$Early.Syphilis_2020)/std_kbl$Early.Syphilis_2020>0.1, "red","black","black")) %>%
+  column_spec(8, color=if_else((std_kbl$Gonorrhea_2021 -std_kbl$Gonorrhea_2020)/std_kbl$Gonorrhea_2020>0.1, "red","black","black")) %>%
+  # collapse_rows(columns=1, valign="top") %>%
+  add_header_above(c(" "=2,"Chlamydia"=2,"Early Syphilis"=2,"Gonorrhea"=2)) %>%
+  add_header_above(c(" "=2,"Rates per 100,000 population"=6)) %>%
+  pack_rows("East Bay",1,6)%>%
+  pack_rows("San Francisco",7,9) 
+```
+
+### Footnote
+
+As a final addition to our table, we can use the footnote() function within kableExtra to add footnotes to our table.
+
+![](images/kable_footnote.png)
+
+<https://www.rdocumentation.org/packages/kableExtra/versions/1.2.1> 
+
+Let's finish our table by adding a footnote -
+
+```{r}
+kable(std_kbl,longtable=T,booktabs=T, col.names=c("County","Sex","2020","2021","2020","2021","2020","2021"), caption="STD Rates by county in Alameda, Contra Costa, and San Francisco 2020-2021") %>%
+  kable_styling(full_width=F) %>%
+  kable_styling(position="left") %>%
+  kable_styling(font_size=10) %>%
+  column_spec(1, bold=TRUE) %>%
+  column_spec(2:8, bold=if_else(std_kbl$sex=="Total",TRUE,FALSE,FALSE)) %>%
+  column_spec(4, color=if_else((std_kbl$Chlamydia_2021-std_kbl$Chlamydia_2020)/std_kbl$Chlamydia_2020>0.1, "red","black","black")) %>%
+  column_spec(6, color=if_else((std_kbl$Early.Syphilis_2021 -std_kbl$Early.Syphilis_2020)/std_kbl$Early.Syphilis_2020>0.1, "red","black","black")) %>%
+  column_spec(8, color=if_else((std_kbl$Gonorrhea_2021 -std_kbl$Gonorrhea_2020)/std_kbl$Gonorrhea_2020>0.1, "red","black","black")) %>%
+  collapse_rows(columns=1, valign="top") %>%
+  add_header_above(c(" "=2,"Chlamydia"=2,"Early Syphilis"=2,"Gonorrhea"=2)) %>%
+  add_header_above(c(" "=2,"Rates per 100,000 population"=6)) %>%
+  footnote(
+    general="Case data is from the CDPH accessed via the CHHS Open Data portal. Pop denominators are from the department of finance. ",
+    general_title="Data Sources",
+    title_format=c("italic"),
+    threeparttable=T
+  )
+```
+
+## gt
+
+-   gt is another fairly simple table generator
+
+    -   Table is broken down into parts/sub-parts that can be customized
+
+    -   Add title, sub-title, footnote
+
+    -   Specify column names, row names, row groupings
+
+-   gtextras allows for more customization to table 
+
+    -   Themes & colors
+
+    -   Embedding graphs, images, and icons in cells (not covered)
+
+    -   Formatting that is not yet available in gt()
+
+-   Optimized to work best in html outputs
+
+    -   Should work with PDF output, but may look different than expected
+
+    -   Output will look slightly different based on which type of output
+
+### Parts of gt table
+
+#### Structure
+
+-   Start with a tibble or data frame
+
+-   Main function is gt()
+
+    -   Will return a gt table as output
+
+    -   Has some arguments that can be specified
+
+-   Additional functions can be added to the gt() for more customization
+
+    -   Typical syntax is tab\_\*()
+
+![](images/gt.png)
+
+Source: <https://gt.rstudio.com/>
+
+#### gt()
+
+gt() is the primary function that creates a core table that can be built off of. The function can be utilized to print a table in the gt format, or store a new object of the gt type.
+
+Let's start building a table using gt() that will have similar features as our final kable table above.
+
+```{r}
+std_kbl %>%
+  gt()
+
+std_gt <- gt(std_kbl)
+
+std_gt
+
+```
+
+There are several arguments that can be added to the gt() call in order to customize your table (however most customization happens via additional functions). Some of the most useful arguments for gt() are:
+
++---------------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
+| Argument            | Description                                                                                                                                   |
++=====================+===============================================================================================================================================+
+| rowname_col         | Identify column name to use as row labels                                                                                                     |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
+| rownames_to_stub    | Specify as TRUE to take rownames from table as the stub (will be taken as priority over rowname_col)                                          |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
+| groupname_col       | Identify column name to use to generate groupings of rows                                                                                     |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
+| row_group_as_column | Specify as FALSE (default) to have row groupings presented as own rows or TRUE to create a new column in the stub that specifies row grouping |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
+
+```{r}
+
+std_kbl %>%
+    gt(rowname_col = "sex",
+     groupname_col = "county",
+     row_group_as_column = T)
+
+```
+
+#### Rows (the "stub")
+
+The area to the left of the table is called the "stub" and represents the row labels, labels for groupings of rows, and summary labels. Depending on the table, it is not always necessary to specify anything for the stub.
+
+Some stub customization is available using arguments in gt() that were covered above, but there are also some functions that can be utilized to do more customization.
+
+*Note:* while stubs are often aesthetically pleasing, they may sometimes be harder to customize.
+
++-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Function        | Description                                                                                                                                                                                                                                                              | Key arguments                                                                                                    |
++=================+==========================================================================================================================================================================================================================================================================+==================================================================================================================+
+| tab_stubhead    | Add label to stub. When a column is designated as a stub, it will no longer automatically populate with the column name as the header.                                                                                                                                   | -   label - string to include as stub header                                                                     |
++-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| tab_row_group   | Group together rows and add additional stub label. This is most helpful when wanting to manually specify which rows to include with each new group/label. (For utilizing an existing column to create these groups, recommend specifying within gt() as described above) | -   label - string to include as grouped row label                                                               |
+|                 |                                                                                                                                                                                                                                                                          |                                                                                                                  |
+|                 |                                                                                                                                                                                                                                                                          | -   rows - specify rows to group; can use numeric reference (1:3) or logic (rows = column_name == "column_value" |
++-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| summary_rows    | Add group-wise summary rows using aggregation functions. (The function grand_summary_rows can similarly be used to add summaries for the whole table)                                                                                                                    | -   groups - specify which groups to apply summary to; defaults to all groups                                    |
+|                 |                                                                                                                                                                                                                                                                          |                                                                                                                  |
+|                 |                                                                                                                                                                                                                                                                          | -   columns - specify columns that summary should be calculated for                                              |
+|                 |                                                                                                                                                                                                                                                                          |                                                                                                                  |
+|                 |                                                                                                                                                                                                                                                                          | -   fns - specify aggregation function (`mean`, `min`, `max`, `median`, `sd`, or `sum` )                         |
+|                 |                                                                                                                                                                                                                                                                          |                                                                                                                  |
+|                 |                                                                                                                                                                                                                                                                          | -   fms - specify format of new expressions including decimals                                                   |
++-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| row_group_order | Modify the ordering of any row groups                                                                                                                                                                                                                                    | -   groups - specify preferred order                                                                             |
++-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+
+Let's do a few different examples to highlight some of these functions -
+
+```{r}
+
+#create a new stub for county & add a header
+std_kbl %>%
+    gt(
+     groupname_col = "county",
+     row_group_as_column = TRUE
+     ) %>%
+  tab_stubhead(label="County") 
+  
+#manually create stub groups
+std_kbl %>%
+  gt() %>%
+  tab_row_group(
+    label = "East Bay",
+    rows = 1:6
+  ) %>%
+  tab_row_group(
+    label = "San Francisco",
+    rows = county == c("San Francisco")
+  )
+
+#summary rows example
+std_kbl %>%
+  filter(sex != "Total") %>%
+  gt(rowname_col = "sex",
+     groupname_col = "county",
+     row_group_as_column = TRUE) %>%
+  summary_rows(
+    groups=everything(),
+    columns=c("Chlamydia_2020", "Chlamydia_2021"),
+    fns = list(average="mean")
+  ) %>%
+   grand_summary_rows(
+    columns=c("Chlamydia_2020", "Chlamydia_2021"),
+    fns = list(average="mean")
+  )
+  
+
+#keep original simple table for next steps
+std_kbl %>%
+    gt(rowname_col = "sex",
+     groupname_col = "county",
+     row_group_as_column = TRUE)
+  
+```
+
+#### Columns
+
+Additional functions are available to customize column labels and group columns together
+
++--------------------+----------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| Function           | Description                                                                                              | Key arguments                                                                                                   |
++====================+==========================================================================================================+=================================================================================================================+
+| tab_spanner        | Group columns together and add header.                                                                   | -   label - string to include as column header                                                                  |
+|                    |                                                                                                          | -   columns - specify columns to include (can be a vector of names or numerical reference)                      |
++--------------------+----------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| cols_move_to_start | Move specified columns to start of table. Will leave an columns indicated as the stub as-is.             | -   columns - specify columns to include (can be a vector of names or numerical reference)                      |
+|                    |                                                                                                          |                                                                                                                 |
+|                    | Similar functions are available to facilitate other rearranging - cols_move_to_end, cols_move, cols_hide |                                                                                                                 |
++--------------------+----------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| cols_label         | Customize column labels for display. Markdown and html can be used to customize text.                    | Provide list of current column name to label                                                                    |
+|                    |                                                                                                          |                                                                                                                 |
+|                    |                                                                                                          | -   (column_1 = "new label 1", column_2 = "new label 2", ...)                                                   |
++--------------------+----------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| cols_width         | Specify widths of columns                                                                                | -   specify columns and widths in this format: col1_name \~ width, col2_name \~ width, etc.)                    |
++--------------------+----------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| cols_merge         | Combine information from two or more columns                                                             | -   columns - specify columns to be merged                                                                      |
+|                    |                                                                                                          |                                                                                                                 |
+|                    |                                                                                                          | -   pattern - refer to columns as {1}, {2}, etc and specify display order; can also add additional text/symbols |
++--------------------+----------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+
+Let's make our columns look a bit cleaner by adding spanners and labels -
+
+```{r}
+std_gt <- std_kbl %>%
+  gt(rowname_col = "sex",
+     groupname_col = "county",
+     row_group_as_column = TRUE) %>%
+  tab_spanner(
+    label = "Chlamydia",
+    columns = c(Chlamydia_2020, Chlamydia_2021)
+  ) %>%
+  tab_spanner(
+    label = "Early Syphilis",
+    columns = 5:6
+  ) %>%
+  tab_spanner(
+    label = "Gonorrhea",
+    columns = 7:8
+  ) %>%
+cols_move_to_start(
+    columns = c(Early.Syphilis_2020,Early.Syphilis_2021)
+  ) %>%
+cols_label(
+    Early.Syphilis_2020 = "2020",
+    Early.Syphilis_2021 = "2021",
+    Chlamydia_2020 = "2020",
+    Chlamydia_2021 = "2021",
+    Gonorrhea_2020 = "2020",
+    Gonorrhea_2021 = "2021"
+  )
+
+std_gt
+```
+
+#### Titles & footnotes
+
++-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Function        | Description                                                                                                                                                                   | Key arguments                                                                                                                                                                                                     |
++=================+===============================================================================================================================================================================+===================================================================================================================================================================================================================+
+| tab_header      | Add a title and subtitle to the table. Can use md() or html() to customize text. Can only be called once                                                                      | -   title (required) - string to include as title                                                                                                                                                                 |
+|                 |                                                                                                                                                                               |                                                                                                                                                                                                                   |
+|                 |                                                                                                                                                                               | -   subtitle (optional) - string to include as subtitle                                                                                                                                                           |
++-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| tab_source_note | Add a source note to bottom of table. Can use md() or html() to customize text. Can call multiple times to add multiple notes.                                                | -   source_note - string to include as note                                                                                                                                                                       |
++-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| tab_footnote    | Add a footnote to the bottom of the table. Differs from a source note as it will reference a specific cell using a symbol. Can call multiple times to add multiple footnotes. | -   footnote - specify text to display                                                                                                                                                                            |
+|                 |                                                                                                                                                                               |                                                                                                                                                                                                                   |
+|                 |                                                                                                                                                                               | -   locations - specify cell location                                                                                                                                                                             |
+|                 |                                                                                                                                                                               |                                                                                                                                                                                                                   |
+|                 |                                                                                                                                                                               |     -   helper functions available to assist with identifying relevant cells (cells_body can be used as a helper function)                                                                                        |
+|                 |                                                                                                                                                                               |                                                                                                                                                                                                                   |
+|                 |                                                                                                                                                                               | -   placement - specify "left", "right", or "auto"                                                                                                                                                                |
++-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| cells_body      | Helper function used to specify cells within body of table (cannot be used to reference cells in stub).                                                                       | -   columns - specify column(s) of interest                                                                                                                                                                       |
+|                 |                                                                                                                                                                               |                                                                                                                                                                                                                   |
+|                 | There are many other similar helper functions to specify different portions of the table. See list [here](https://gt.rstudio.com/reference/index.html#helper-functions).      | -   rows - specify row location; can be a numerical reference (2 or 1:3), or include logic that references a specific value (i.e. rows = column_name == "column_value") OR rows = column_name == min(column_name) |
++-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| cells_stub      | Helper function used to specify cell location within the stub. Works most predictably when there is only one stub.                                                            | -   rows - specify row value; can be numeric or include logic (rows = column_name == "column_value")                                                                                                              |
++-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+```{r}
+std_gt %>%
+  tab_header(
+    title=md("**STD Rates by County**"),
+    subtitle="California, 2020-2021"
+  ) %>%
+  tab_source_note(source_note="Source: Case data is from the CDPH accessed via the CHHS Open Data portal. Pop denominators are from the department of finance.")
+
+#add header, source note, and footnotes
+std_gt %>%
+  tab_header(
+    title=md("**STD Rates by County**"),
+    subtitle="California, 2020-2021"
+  ) %>%
+  tab_source_note(source_note="Source: Case data is from the CDPH accessed via the CHHS Open Data portal. Pop denominators are from the department of finance.") %>%
+  tab_footnote(
+    footnote = "Data from Alameda County includes data from Berkeley local health jurisdiction"
+  )
+
+#add header, source note, and more complex footnotes
+#create an object that can be used to identify county with highest Chlamydia rate
+highest_c <- 
+  std_kbl %>%
+  arrange(desc(Chlamydia_2021)) %>%
+  slice(1) %>%
+  pull(county)
+
+std_gt2 <- std_gt %>%
+  tab_header(
+    title=md("**STD Rates by County**"),
+    subtitle="California, 2020-2021"
+  ) %>%
+  tab_source_note(source_note="Source: Case data is from the CDPH accessed via the CHHS Open Data portal. Pop denominators are from the department of finance.") %>%
+  tab_footnote(
+    footnote = "Data from Alameda County includes data from Berkeley local health jurisdiction"
+  ) %>%
+  tab_footnote(
+    footnote = md("The **highest** Chlamydia rate."),
+    locations = cells_body(
+      columns = county,
+      rows = county == highest_c
+    )
+  ) %>% #this doesn't work when county is a stub
+  tab_footnote(
+    footnote = "The lowest Chlamydia rate.",
+    locations = cells_body(
+      columns = Chlamydia_2021,
+      rows = Chlamydia_2021 == min(Chlamydia_2021)
+    )
+  )
+
+# example using cells_stub
+std_kbl %>%
+  gt(rowname_col = "county") %>%
+  tab_footnote(
+    footnote = "Includes data from Berkeley local health jurisdiction",
+    locations = cells_stub(rows=1:3)
+  ) 
+  
+
+std_gt2
+
+
+```
+
+#### Style & formatting
+
+Within the gt package, there are several functions to help with customizing the style and formatting of the table.
+
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------+
+| Function      | Description                                                                                                                                           | Key arguments                                                                |
++===============+=======================================================================================================================================================+==============================================================================+
+| tab_style     | Apply styles to specific cells. Style includes many components like color of text or cell, weight or style of text, cell alignment, and cell borders. | -   style - multiple styles can be specified using a list()                  |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       |     -   cell_text() to change text color, weight, alignment of text and more |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       |     -   cell_fill() to change cell color                                     |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   locations - specify columns and/or rows                                  |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------+
+| tab_options() | Modify table width, style or formatting for table overall or for individual parts (header, stub, body, etc.)                                          | -   table.width                                                              |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   table.font.size                                                          |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   header.background.color                                                  |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   and [many more](https://gt.rstudio.com/reference/tab_options.html)       |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------+
+| fmt_number()  | Format numeric values. Also see fmt_percent() and fmt_currency() and [more](https://gt.rstudio.com/reference/index.html#formatting-column-data)       | -   columns - specify column to apply to; defaults to everything             |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   rows - specify rows to apply to; defaults to everything                  |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   decimals - specify decimal places                                        |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   suffixing - specify suffix for cell values                               |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   and many [more](https://gt.rstudio.com/reference/fmt_number.html)        |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------+
+| sub_missing   | Specify a string to replace all missing values. (Similar function available to replace zeros - sub_zero.)                                             | -   columns                                                                  |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   rows                                                                     |
+|               |                                                                                                                                                       |                                                                              |
+|               |                                                                                                                                                       | -   missing_text - string to replace missing values                          |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------+
+
+Let's add some custom formatting to mirror what was presented in our final kable table. This includes making the "total" rows bold and changing text to red when there is a 10% increase between years
+
+```{r}
+std_gt_final <- std_gt2 %>%
+  tab_style(
+    style = 
+      list(cell_text(weight = "bold")),
+    locations = cells_body(
+      rows = sex == "Total"
+    )) %>%
+  tab_style(
+    style = 
+      list(cell_text(color = "red")),
+    locations = cells_body(
+      column=Chlamydia_2021,
+      rows = (Chlamydia_2021 - Chlamydia_2020)/Chlamydia_2020 > 0.1
+    ) 
+  ) %>%
+  tab_style(
+    style = 
+      list(cell_text(color = "red")),
+    locations = cells_body(
+      column=Early.Syphilis_2021,
+      rows = (Early.Syphilis_2021 - Early.Syphilis_2020)/Early.Syphilis_2020 > 0.1
+    ) 
+  ) %>%
+  tab_style(
+    style = 
+      list(cell_text(color = "red")),
+    locations = cells_body(
+      column=Gonorrhea_2021,
+      rows = (Gonorrhea_2021 - Gonorrhea_2020)/Gonorrhea_2020 > 0.1
+    ) 
+  )
+
+std_gt_final
+
+```
+
+### gtExtras
+
+Package that includes a selection of functions that are not currently available in gt(); may change over time as gt() expands.
+
+**Themes**
+
+-   gt_theme\_\* can be used to apply theme to table
+
+    -   gt_theme_538()
+
+    -   gt_theme_nytimes()
+
+    -   gt_theme_dark()
+
+    -   and several more
+
+```{r}
+
+std_gt_final %>%
+  gt_theme_538()
+```
+
+**Colors**
+
+-   gt_color_rows - add color to column cells based on the values, key arguments include:
+
+    -   columns - specify columns where coloring should occur
+
+    -   palette - colors for values to be mapped to
+
+    -   direction - 1 to increase color with increased value; -1 to reverse
+
+-   gt_color_box - add colored box to cells based on values, key arguments include:
+
+    -   columns
+
+    -   domain - numeric range
+
+    -   palette
+
+```{r}
+std_gt_final %>%
+  gt_color_rows(
+    columns = "Chlamydia_2021",
+    palette = "ggsci::blue_material",
+    domain = 0:1000
+  ) %>%
+  gt_color_box(
+    columns = "Gonorrhea_2021",
+    domain = 0:1100,
+    palette = c("purple", "lightgrey", "green")
+  )
+
+```
+
+**Other functionality we will not cover:**
+
+-   Adding icons/images/plots within a cell
+
+-   html helpers
+
+-   stacking text
+
+-   Additional formatting
+
+    -   fmt_pad_num()
+
+    -   fmt_pct_extra()
+
+**Note:** there is an additional package called gt_summary() that can be used to create summary tables.
+
+## Conclusion
+
+In closing, we just took a bit of a medium to deep dive into two different table options - kable and gt - that are very useful for creating static tables, whether basic or more customized. Each type of table has it's pros and cons. The gt package has more capability for customization and seems to be updated with new functionality more often than kable. Either way, both are great options for starting to get our tables presentation ready.

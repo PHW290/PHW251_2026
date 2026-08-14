@@ -1,0 +1,99 @@
+---
+title: "Local R and R Studio Setup - Mac"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## What is Git?
+
+Git is a version control system that lets you keep track of your code history. It allows you to document what changes you've made to files, and access previous versions when necessary. Changes are made in a local "repository" and then pushed to a remote "repository". The remote repository allows for accessing your files on different computers, collaboration on files, and serves as a remote backup.
+
+**Repository**: a repository is just a location where you keep all of your files and resources for a given project. You will often hear this called a "repo".
+
+## What is GitHub?
+
+GitHub is an online hosting service for git repositories. It serves as an online backup and a way to collaborate with others. This is just a free service that helps you manage your projects online.
+
+## Using Git and GitHub with R
+
+### Benefits
+
+-   Tracked changes (but better) for your code
+
+-   Eliminates many barriers to collaboration
+
+-   Encourages an organized workflow
+
+-   Helps with being able to reproduce research
+
+![](images/git1.png){fig-align="center"}
+
+### Drawbacks
+
+-   Learning curve
+
+-   Not originally designed for data science
+
+-   Hard to find the knowledge sweet spot
+
+## Git Requirements for PHW251
+
+The only time you will be required to use git in this course is for collaborating on the group project. Specific requirements for this will be outlined later in the course. However, we strongly encourage you to use git for your assignments and other course materials. While the assignments and course materials on github are setup to show up automatically for you on the Datahub, it is good to know some git basics in case there are ever any issues accessing these files.
+
+## Creating a GitHub Account
+
+If you don't already have a GitHub account, please go to [GitHub](https://github.com/) and click "Sign Up" in the top right corner. For collaboration on school projects it can often be easier if others can look you up by your school email on GitHub, so we recommend using your school email.
+
+Once you are logged in, you should see a dashboard that looks like this:
+
+![](images/git2.png){fig-align="center"}
+
+Luckily, you can ignore most of this!
+
+## Creating a Repository on GitHub
+
+On [GitHub](https://github.com/) (make sure you are logged in), these are the steps to create a new repository:
+
+1.  If you have never created a repository, you will see a green "Create Repository" button on the upper left side. If you have created a repository before, you will see a green "New" button on the upper left side next to the text that says "Repository". Click this green button.
+
+2.  Give your repository a name.
+
+3.  Select if you want the repository to be public or private.
+
+4.  Check the box to "add a README file". This is a file where you can document things like the names of your group members.
+
+5.  Under the add .gitignore heading, click the down arrow and select "R". This will add a file that tells git to ignore common file types in R that people usually want to ignore (such as temporary files).
+
+6.  Click the green "Create Repository" button at the bottom.
+
+## Cloning the Remote Repository
+
+In order to use this git repository locally or on the Datahub, you will need to "clone" it. You only need to do this once when starting to work with a new repository. Once you have it set up, the connection to the remote repository will be saved for future use.
+
+1.  In R Studio, click the down arrow by the listed project, then click "New Project"
+2.  Select "Version Control" and then "Git".
+3.  Go to the page for your repository on [GitHub](https://github.com/), then click the green "Code" button, and copy the HTTPS link.
+
+![](images/git3.png){fig-align="center"}
+
+4.  Paste the HTTPS link in the "Repository URL" field in R Studio, and choose a project directory name and location.
+5.  Click "Create Project".
+6.  Enter your GitHub username when prompted. *Note: some browsers may try to autofill incorrect information here. Please type in your github username (not email address).*
+7.  Go back to github.com, click your profile picture in the top right, and then select "Settings". Scroll down and click "Developer settings" on the bottom left.
+8.  Select "Personal access tokens" on the left and click "Tokens (classic)".
+9.  Click the blue text that says "Generate a personal access token"
+10. In the note field, you can just enter a simple name like "my_token"
+11. In the expiration field, click "custom" and select December 31, 2023. This is so your token will not expire before the end of this course.
+12. Under the select scopes field, click the check box next to "repo" (which will select all sub-boxes as well). You don't need to worry about any of the other things listed under scopes.
+13. Click the green "Generate Token" button at the bottom.
+14. Copy the personal access token. Go back to R Studio, and paste this in the password field and click "okay".
+
+You have now set up the connection between R Studio and your remote repository!

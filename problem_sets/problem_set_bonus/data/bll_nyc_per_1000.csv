@@ -1,0 +1,21 @@
+borough_id,time_period,bll_5plus_1k
+Bronx,2013,20.1
+Bronx,2014,18.7
+Bronx,2015,15.7
+Bronx,2016,15
+Brooklyn,2013,30.2
+Brooklyn,2014,26.8
+Brooklyn,2015,22.6
+Brooklyn,2016,22.3
+Manhattan,2013,15.2
+Manhattan,2014,14.1
+Manhattan,2015,10.6
+Manhattan,2016,8.1
+Queens,2013,18.2
+Queens,2014,18.5
+Queens,2015,15.4
+Queens,2016,14.3
+Staten Island,2013,17.6
+Staten Island,2014,17.1
+Staten Island,2015,12
+Staten Island,2016,14.8

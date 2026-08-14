@@ -1,0 +1,149 @@
+---
+title: "Visualization Introduction"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Overview
+
+-   What is data visualization?
+
+-   Why is it important?
+
+-   Goals
+
+-   Responsibilities
+
+-   Using R
+
+## Data visualization
+
+Data visualization is the graphical representation of information and data.
+
+![](images/viz1.png)
+
+Resources:
+
+-   <https://hbr.org/2016/06/visualizations-that-really-work> 
+
+-   <https://www.data-to-viz.com/>
+
+## Data visualization goals
+
+![](images/viz2.png)
+
+## Data visualization caution/responsibility
+
+There is a responsibility with data visualization to present data in a factual, accurate manner.
+
+Considerations:
+
+-   Scale of x-axis and y-axis
+
+<!-- -->
+
+-   Individual plots
+
+-   Comparing plots
+
+<!-- -->
+
+-   Color/shapes
+
+    -   Sufficiently differentiating between groups
+
+-   Value exclusions
+
+    -   Outliers
+
+    -   Axis limitation
+
+-   And many more
+
+![](images/viz3.png)
+
+## Data Visualization Best Practices
+
+-   Descriptive titles and labels
+
+    -   Title can include an interpretation of results (“STD rates, CA 2001-2018” versus “STDs are increasing in all California Counties from 2001-2018”)
+
+-   Legends
+
+    -   Clearly labeled
+
+    -   Meaningful order
+
+-   Footnotes
+
+    -   Data sources
+
+    -   Methods, if relevant
+
+    -   Limitations/caveats
+
+-   Colors
+
+    -   Colorblind friendly
+
+    -   Appropriate with scale
+
+**Best practice:** A good rule of thumb is to include all necessary information in a visual so that if someone saw only the visual (no other context), they would have all the information needed to interpret correctly.
+
+## Data Visualization in R
+
+-   R is a powerful tool for creating many types of visualizations
+
+    -   Tables
+
+    -   Graphs
+
+    -   Dashboards (R Shiny)
+
+-   Quarto and R Markdown are tools for generating presentable tables and graphs
+
+    -   PDF
+
+    -   Html
+
+    -   Microsoft products (Rmd)
+
+-   Save graphs or tables as images to copy and paste elsewhere
+
+-   Many packages available for additional visualization tools
+
+![](images/viz4.png)
+
+## Getting started
+
+### Factors
+
+-   Factors can be used to control the order that values appear in a table and/or plot
+
+-   Can be used to assign new order and labels to character and numeric values
+
+-   Examples:
+
+    -   `factor(example1, ordered=TRUE, levels = c("low", "middle", "high"), labels = c(“l”,”m”,”h”))`
+
+    -   `factor(example2, ordered=TRUE, levels = c(3,2,1), labels = c(“l”,”m”,”h”))`
+
+### Data frames (or tibbles)
+
+Before starting to created a formatted table or generate a graph, the original data frame (table) should have been sufficiently tidied 
+
+-   Limited to only rows and columns desired for the visualizations
+
+-   Variables changed to factor to control order
+
+-   For tables, get as close to the final format and order as possible
+
+-   If needed, a tibble can be converted to a data frame by adding this to the end of dplyr statements `%>% data.frame()`

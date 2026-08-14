@@ -1,0 +1,143 @@
+---
+title: "incidence2: Epidemic Curves"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## **Epidemic Curves with the incidence2 Package**
+
+Epidemic curves are fundamental tools in epidemiology, providing a visual representation of the number of cases over time. They allow epidemiologists to understand the dynamics of an outbreak. In this module, we'll learn how to generate and customize these curves using the `incidence2` package in R.
+
+### **Learning Outcomes**
+
+Upon completion of this module, you will be able to:
+
+1.  Construct basic epidemic curves.
+2.  Create stratified epidemic curves to uncover patterns in subgroups.
+3.  Adjust the time intervals in epidemic curves.
+
+### Setting up
+
+```{r, message=F, warning=F}
+library(tidyverse)
+library(magrittr)
+library(pacman)
+pacman::p_load(rio)
+pacman::p_load(incidence2)
+```
+
+### Loading the data
+
+We'll use a dataset simulating an Ebola epidemic for our analysis.
+
+```{r}
+ebola_data <- import("https://github.com/appliedepi/epirhandbook_eng/raw/master/data/case_linelists/linelist_cleaned.xlsx")
+
+head(ebola_data)
+```
+
+### Creating a basic epidemic curve
+
+Before plotting, always ensure that the date variable is correctly formatted:
+
+```{r}
+ebola_data <- ebola_data %>%
+  mutate(date_onset = as.Date(date_onset))
+```
+
+Now, let's create our first epidemic curve:
+
+1.  **Incidence Object**: This is the foundational object for the `incidence2` package. It aggregates case counts based on a specified time interval.
+
+2.  **Plot**: This function will display the epidemic curve.
+
+```{r}
+epi_day <- incidence(
+  x = ebola_data, 
+  date_index = "date_onset", 
+  interval = "day")
+
+plot(epi_day)
+```
+
+### Modifying time intervals
+
+You might sometimes want to aggregate data differently. For instance, looking at monthly counts rather than daily can provide a clearer overall trend.
+
+```{r}
+epi_month <- incidence(
+  x = ebola_data, 
+  date_index = "date_onset", 
+  interval = "month")
+
+plot(epi_month)
+```
+
+### Stratified epidemic curves
+
+Stratifying data can help uncover patterns within subgroups. Here, we'll create an epidemic curve stratified by age categories.
+
+Ensure that you handle any NA values in the `age_cat` column before stratifying, as the `incidence2` package no longer supports treating NA values as a separate group with the `na_as_group` parameter.
+
+For the purpose of this tutorial, let's replace NA values with a placeholder like "Unknown."
+
+We'll also factor `age_cat` so that the legend has the correct order.
+
+```{r}
+ebola_data <- ebola_data %>%
+  mutate(age_cat = if_else(is.na(age_cat), "Unknown", age_cat),
+         age_cat = factor(age_cat,
+                          levels = c("0-4",
+                                     "5-9",
+                                     "10-14",
+                                     "15-19",
+                                     "20-29",
+                                     "30-49",
+                                     "50-69",
+                                     "70+",
+                                     "Unknown")))
+
+age_group <- incidence(
+  x = ebola_data, 
+  date_index = "date_onset", 
+  interval = "week", 
+  groups = "age_cat")
+
+plot(age_group, fill = "age_cat") + labs(fill = "Age Category")
+```
+
+### Aggregating case counts
+
+To further analyze the data, we might want to aggregate case counts. Here, we aggregate weekly counts by hospital:
+
+```{r}
+count_data <- ebola_data %>% 
+  group_by(hospital, date_hospitalisation) %>% 
+  summarize(n_cases = n()) %>% 
+  ungroup()
+
+head(count_data)
+```
+
+Finally, let's visualize these aggregated counts in an epidemic curve:
+
+```{r}
+epi_counts <- incidence(
+  x = count_data, 
+  date_index = "date_hospitalisation",
+  counts = "n_cases",
+  interval = "week", 
+  groups = "hospital")
+
+plot(epi_counts, fill = "hospital")
+```
+
+Not bad! The visualization does need some work, but the core output of the `incidence2` package is shown.

@@ -1,0 +1,82 @@
+---
+title: "COVID-19 Report demonstrating HTML output"
+output:
+  html_document: default
+  pdf_document: default
+params:
+  geog:
+    label: Choose geography
+    value: California
+    input: select
+    choices: !r unique(covid_raw$area)
+  test_chart_include: TRUE
+---
+
+```{r setup, include=FALSE, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(magrittr)
+library(data.table)
+library(plotly)
+```
+
+## COVID-19 Cases per day
+
+This is the number and 7 day average of COVID cases per day for `r params$geog ` . 
+
+```{r data_input, echo = F, message = F, warning = F}
+
+covid_raw <- covid_df <- read_csv("data/covid19cases_test.csv")
+
+covid_df <- covid_raw %>%
+  filter(area == params$geog) %>%
+  mutate(case_roll = frollsum(cases, 7, hasNA = T)/7,
+         test_roll = frollsum(total_tests, 7, hasNA = T)/7
+         )
+```
+
+```{r plot_cases, message = F, warning = F}
+fig1 <- plot_ly(data = covid_df) %>%
+            add_trace(x = ~date, y = ~cases, type = 'bar', name = 'Cases per day',
+                                     marker = list(color = 'rgb(187, 216, 228)'),
+                                     hoverinfo = "text",
+                                     text = ~paste(round(cases, 0), ' cases')) %>%
+             add_trace(x = ~date, y = ~case_roll, type = 'scatter', mode = 'lines', name = 'Average Cases', 
+                                     line = list(color = '#345B6B'),
+                                     hoverinfo = "text",
+                                     text = ~paste(round(case_roll, 1), ' average cases')
+             ) %>% 
+            layout(legend = list(x = 0.1, y = 0.9))
+
+fig1
+```
+
+
+## COVID-19 tests per day
+
+This is the number of PCR tests per day for `r params$geog `.
+
+```{r plot_tests, warning = F, message=FALSE}
+
+        fig2 <- plot_ly(data = covid_df) %>%
+            add_trace(x = ~date, y = ~total_tests, type = 'bar', name = 'Tests per day',
+                                     marker = list(color = 'rgb(245, 185, 73)'),
+                                     hoverinfo = "text",
+                                     text = ~paste(round(total_tests, 0), ' tests')) %>%
+             add_trace(x = ~date, y = ~test_roll, type = 'scatter', mode = 'lines', name = 'Average Tests', 
+                                     line = list(color = '#345B6B'),
+                                     hoverinfo = "text",
+                                     text = ~paste(round(test_roll, 2), ' average tests')
+             ) %>% 
+            layout(legend = list(x = 0.1, y = 0.9))
+```
+
+
+```{r print_plot, message = F, warning = F}
+if(params$test_chart_include == TRUE){
+    fig2 # print Figure 2
+    }else{
+         # print nothing
+         }
+```

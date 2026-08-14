@@ -1,0 +1,365 @@
+---
+title: "Tidying Data, Part 2"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Manipulating Columns with dplyr
+
+We'll focus on the following functions for manipulating columns with dplyr.
+
++----------------+----------------------+----------------------------+
+| Extract        | select()             | Extract columns as a table |
++----------------+----------------------+----------------------------+
+| Extract        | pull()               | Extract column as a vector |
++----------------+----------------------+----------------------------+
+| Rename columns | rename()             | Rename columns             |
++----------------+----------------------+----------------------------+
+| Add            | tibble::add_column() | Add a new column           |
++----------------+----------------------+----------------------------+
+| Add            | mutate()             | Compute new columns        |
+|                |                      |                            |
+|                | transmute()          |                            |
+|                |                      |                            |
+|                | mutate_at()          |                            |
+|                |                      |                            |
+|                | mutate_all()         |                            |
++----------------+----------------------+----------------------------+
+
+Let's import some data to practice modifying columns.
+
+```{r, warning=F, message=F}
+library(tidyverse)
+
+#import file of infectious disease data by county
+file_path <- "data/odp_idb_2001_2022_ddg_compliant.csv"
+
+#import as is; not going to fix the NA values in Rate (will address later)
+ids <- read_csv(file_path)
+
+#check out table structure/types
+str(ids)
+```
+
+### select()
+
+Select columns to extract from a table.
+
+We can use the following commands / functions to support `select()` .
+
+-   `:` to select a range
+
+-   `c()` to specify a list of columns, using `-` to exclude
+
+-   `!` to take the complement of a set of columns
+
+-   Helper functions:
+
+    -   `everything()`, `last_col()`
+
+    -   pattern matching: `starts_with()`, `ends_with()`, `contains()`, `matches()`
+
+-   
+
+#### Base R syntax
+
+```{r, eval=F}
+df["county"] 
+df[c("county", "minutes")]
+df[-c("county", "minutes")]
+```
+
+
+#### Drop with ! or -
+
+We can drop the rate column using - or !
+
+```{r}
+# both produce the same result
+id_sub <- select(ids, !Rate)
+id_sub <- select(ids, -Rate)
+colnames(id_sub)
+```
+
+#### Pattern matching
+
+Using `contains()`, we can find columns with a given string pattern. If we wanted to remove the confidence interval columns, we could use the following syntax.
+
+```{r}
+id_sub <- select(ids, -contains("CI"))
+colnames(id_sub)
+```
+
+The same is true of the other pattern matching functions, such as `ends_with()`.
+
+```{r}
+id_sub <- select(ids, !ends_with("CI"))
+colnames(id_sub)
+```
+
+#### c(), :
+
+We can use `c()` to specify a vector of columns we want to keep. Let's keep all of the columns except the confidence intervals.
+
+```{r}
+id_sub <- select(ids, c(Disease, County, Year, Sex, Cases, Population))
+colnames(id_sub)
+```
+
+We can accomplish the same outcome by specify a range of columns too.
+
+```{r}
+id_sub <- select(ids, Disease:Population)
+colnames(id_sub)
+```
+
+#### Changing order
+
+Another **neat** feature of `select()` is the ability to change the order of columns.
+
+```{r}
+id_sub <- select(ids, c(County, Disease, Population, Year, Cases))
+colnames(id_sub)
+```
+
+
+### pull()
+
+Extract a single column into a vector.
+
+#### Base R syntax
+
+```{r, eval=F}
+df_steps$names
+df_steps[["names"]]
+df_steps[[2]]
+```
+
+
+#### Vector of diseases
+
+We can create a vector of unique disease from our data with the following.
+
+```{r}
+diseases <- id_sub %>%
+  distinct(Disease) %>% # filter
+  pull(Disease)         # specify column
+
+diseases
+
+# we can also leave `pull()` blank when there's only one column present. The following produces the same results.
+
+# diseases <- id_sub %>%
+#   distinct(Disease) %>% 
+#   pull() # left pull() blank
+```
+
+#### Named vector
+
+If we wanted a vector of counts linked to a county, we could use `pull()`'s named vector feature.
+
+```{r}
+county_counts <- id_sub %>%
+  filter(Disease == "Zika Virus Infection",
+         Year == 2018,
+         Cases > 0) %>%
+  pull(Cases, name = County)
+
+county_counts
+```
+
+
+### rename()
+
+Rename existing columns.
+
+-   Syntax: new_name = old_name
+
+#### Base R syntax
+
+```{r, eval=F}
+col.names(df_steps <- c(new_name1, new_name2, ...))
+```
+
+
+#### rename()
+
+Rename a single variable, keeping all other columns the same.
+
+```{r}
+ids_rename <- rename(ids, disease = Disease)
+names(ids_rename)
+```
+
+Rename multiple variables in the same call.
+
+```{r}
+ids_rename <- rename(ids, disease = Disease, county = County)
+names(ids_rename)
+```
+
+#### rename_with()
+
+Rename all variables. In the following example we will rename all variables to lowercase, replacing spaces with an underscore.
+
+First we'll add a column to `ids` that has spaces in the column name.
+
+```{r}
+ids_add <- ids %>% rename(`Disease Name` = Disease)
+names(ids_add)
+```
+
+Then we will use `rename_with()` to modify all columns.
+
+```{r}
+ids_rename_with <- rename_with(
+  ids_add,             # data frame
+  ~ tolower(           # function call (using tolower())
+    gsub(" ",          # embedded gsub() checking for empty spaces pattern " "
+         "_",          # replace pattern with underscore "_"         
+         .x,           # .x is the placeholder for every column in the data frame
+         fixed = TRUE) # pattern must match exactly
+    ))
+
+names(ids_rename_with)                          
+```
+
+#### select()
+
+You can also rename columns during a `select()` statement, but your resulting data frame will only have the columns specified.
+
+```{r}
+ids_rename_select <- select(ids, disease = Disease)
+
+names(ids_rename_select)
+```
+
+
+### tibble::add_column()
+
+Add column to existing tibble / data frame.
+
+You will need to provide a vector that matches the number of rows in the existing data frame.
+
+#### Base R syntax
+
+```{r, eval=F}
+df_steps$color_shoes <- c("pink", "brown", "black", "green")
+
+# alternatively
+color_shoes <- c("pink", "brown", "black", "green")
+cbind(df_steps, color_shoes)
+```
+
+Let's create a smaller data frame to use for the example.
+
+```{r}
+ids_small <- head(ids) %>% select(Disease, County, Sex)
+ids_small
+```
+
+```{r}
+Year <- 
+ids_small <- add_column(
+  ids_small,
+  Year = c(2001, 2001, 2001, 2002, 2002, 2003), # row values
+  .before = "Sex")                              # place column before Sex column
+
+ids_small
+```
+
+### mutate()
+
+Adds a new column(s) to the end of a data frame, or overwrites existing ones.
+
+Values
+
+-   vector of length 1
+
+-   vector of length matching data frame length
+
+-   `NULL` to remove column
+
+-   calculation or function based on existing columns
+
+#### Base R syntax
+
+```{r, eval=F}
+df_steps$miles_min <- df_steps$minutes / df_steps$miles
+```
+
+Data frame to use.
+
+```{r}
+id_campy <- ids %>% 
+  filter(Disease == "Campylobacteriosis",
+         Sex == "Total") %>%
+  arrange(Year)
+
+id_campy
+```
+
+
+#### Adding a column
+
+You can add a column with one vector so that every row takes that vector's value.
+
+```{r}
+id_campy %>% mutate(new_col = "one value for all rows") 
+```
+
+You can supply functions as well.
+
+```{r}
+id_campy %>% mutate(new_col = Sys.time()) # current time stamp
+```
+
+#### Cleaning up a column
+
+You may modify existing columns as well. We can clean up the Rate column.
+
+```{r}
+# we can see at a glance there's some strange values in Rate
+head(id_campy$Rate)
+```
+
+You can use previously defined columns in your `mutate()` call, even if those columns have the same name.
+
+```{r}
+ids_campy_rate <- id_campy %>%
+  mutate(rate_na = na_if(Rate,"-"),              # if the value is "-" set to NA
+         rate_clean = str_remove(rate_na,"[*]"), # remove any string values of "[*]
+         rate_clean = as.numeric(rate_clean),    # change entire column type to numeric
+  ) %>% 
+  select(Rate, rate_na, rate_clean)
+
+head(ids_campy_rate)
+```
+
+#### Calculating based on other columns
+
+You can use other columns to calculate new values.
+
+```{r}
+ids_campy_calc <- id_campy %>%
+  mutate(
+    county_small = if_else(Population < 100000, "small", "not small"),
+    county_cat = case_when(
+      Population < 100000 ~ "small",
+      Population < 1000000 ~ "medium",
+      TRUE ~ "large"),
+    ci = glue::glue("({Lower_95__CI}, {Upper_95__CI})")
+    ) %>%
+  select(Population, county_small, county_cat, Lower_95__CI, Upper_95__CI, ci)
+
+ids_campy_calc
+```
+

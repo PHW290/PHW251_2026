@@ -1,0 +1,325 @@
+---
+title: "Extra Examples & Practice Problems"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Overview
+
+This file has extra examples broken down into steps for using `which()` and subsetting data, as well as **for** and **while** loops.
+
+## Creating data for the examples
+
+Here I am just going to create a tibble of sample data. We can say this is a dataframe of COVID-19 test results for 20 people, and it has a unique identifier (`id`), the test result (`test_result`), number of people they were in close contact with in the 3 days prior to the test (`num_contacts`), and age (`age`).
+
+Please make sure you run the whole code chunk below to get the correct sample data.
+
+```{r}
+
+library(tidyverse)
+
+# the set seed part here is just make sure you get the 
+# same random sampling as this example
+set.seed(1)
+
+# creating some sample data
+data <- tibble(id = c(1:20), 
+               # the sample function is just randomly sampling TRUE
+               # or FALSE 20 times with replacement
+               test_result = sample(c(TRUE,FALSE), 20, TRUE), 
+               # the sample function is just randomly sampling
+               # the numbers 1 through 10 with replacement
+               num_contacts = sample(c(1:10), 20, TRUE), 
+               # the sample function is just randomly sampling
+               # the numbers 18 through 80 with replacement
+               age = sample(c(18:80), 20, TRUE))
+
+str(data)
+
+```
+
+## Using the `which()` Function
+
+### Examples
+
+Now lets say I asked you to create a subset of the data that just contained the positive test results (`test_result == TRUE`).
+
+It would take you a while, but you could look at the data identify the rows in which this is true, and subset the data this way.
+
+```{r}
+
+# create a vector of the row numbers in which test_result == TRUE
+pos_test_rows <- c(1, 3, 4, 6:8, 11:15, 20)
+
+# select only those rows and all columns, 
+# and save as a new tibble in R
+pos_test_data <- data[pos_test_rows, ]
+
+```
+
+I'm sure you can tell this wouldn't really work if we had a lot of data, and it's very easy to make a mistake. Better to use some code to do this for use! If I use the `which()` function, I can get the row numbers where the condition I specified evaluates to `TRUE`
+
+```{r}
+
+which(data$test_result == TRUE)
+
+```
+
+You can also save this as an object, just like when we specified the numbers ourselves.
+
+```{r}
+
+pos_test_rows <- which(data$test_result == TRUE)
+
+```
+
+Now, we can use this vector of row numbers to select the data we want.
+
+```{r}
+
+# one option
+pos_test_data <- data[pos_test_rows, ]
+
+```
+
+Alternately, you can save some time and just put the `which()` statement in the place of the vector of row numbers, and also get the same result.
+
+```{r}
+
+# another option that does the same as above
+pos_tests_data  <- data[which(data$test_result == TRUE), ]
+
+```
+
+You can also specify multiple logical conditions within the `which()` statement. Lets say we only want the positive test results where the number of close contacts in the last 3 days was greater than 5. We can just add an `&` sign and the second condition we want to be true.
+
+```{r}
+
+# another option that does the same as above
+pos_tests_data  <- data[which(data$test_result == TRUE & 
+                                data$num_contacts > 5), ]
+
+```
+
+### Practice problems
+
+1.  Imagine we are trying to identify people who tested positive who may be higher risk. Use the `which()` function to create a new tibble that only contains the rows for people who have COVID-19 and are 65 or older.
+
+```{r}
+
+# your code here
+
+```
+
+2.  Now imagine you are asked to pull up the data for 2 specific people based on their `id` number (`id` numbers 2 and 10). Use the `which()` function to create a new tibble with only the data for these people.
+
+```{r}
+
+# your code here
+
+```
+
+## For Loops
+
+For loops allow you to repeat the same process on multiple inputs. This saves a lot of coding and reduces errors, compared to copying and pasting you code multiple times and then changing an input.
+
+### Examples
+
+For example, if I asked you to print out a numeric summary of the `age` and `num_contacts` variables, you could use a for loop. It might not seem as handy here when we are only doing this for two variables, but you could use this exact same process if you had many variables to iterate over.
+
+There a lot of different ways that you can specify what you want to iterate over. In this first example, I am using `i` as basically a place holder for what I'm going to iterate over, which in this case is 3 and 4. The first time the loop runs the `i` will be replaced with 3, and the second time the loop runs the `i` will be replaced with 4 -- which allows us to select the 3rd and 4th columns of the data respectively to generate a simple numeric summary of each.
+
+```{r}
+
+for(i in 3:4) { 
+  print(summary(data[, i]))
+}
+
+```
+
+It actually doesn't matter if you use `i` or something else in this case though, as long as you specify the same letter or term in the beginning of the for statement and later in the code you are running. In loops like this using `i` is just somewhat standard. In this example, I've replaced `i` with `variable` -- the output is the same.
+
+```{r}
+
+for(variable in 3:4) { 
+  print(summary(data[, variable]))
+}
+
+```
+
+If you don't know how many things you need to iterate through, you can use `length()`. In this case let's say we know that all variable after column 3 are numeric and we want to get the brief numeric summary of all of these variables. However, maybe out dataset keeps getting modified and we want to be able to use the same code regardless of the number of variables. We can replace the 4 with `length(data)` and get the same result because the length of the data is 4 in this case.
+
+```{r}
+
+for(variable in 3:length(data)) { 
+  print(summary(data[, variable]))
+}
+
+```
+
+In some cases, you may not want to use the variable's index to run the loop though -- because if the data structure changes this can cause issues. The code below does the same thing as the loops above, but uses the variable names. In this case, I've also switched the order and chosen to show the summary for `age` first.
+
+```{r}
+
+variables <- c("age", "num_contacts")
+
+for(x in variables) { 
+  print(summary(data[, x]))
+}
+
+```
+
+### Practice problems
+
+3.  Modify the for loop above to do the following:
+    -   print "Age (years)" if the variable is age
+    -   print "Number of contacts in the last 3 months" if the variable is `num_contacts`
+
+```{r}
+
+# your code here
+
+```
+
+4.  The sample `pet_data` dataset below contains the name, age, species, and weight (in pounds) of each of your GSI's pets. Write a for loop to calculate how they compare to a (made up) average household pet weight of 20 pounds, and print the result for each pet. Try to use some of the other things you've used in the course so far to print out a nicer looking summary of your results. There are multiple ways to do this! This one is also a bit more complicated, so take your time to think about what each step should be in this process.
+
+```{r}
+
+pet_data <- tibble(name = c("Artemis", "Tonks", "Rajah"), 
+                   age = c(7, 7, 13), 
+                   species = c("dog", "dog", "cat"), 
+                   weight = c(50, 60, 15))
+
+# your code here
+
+```
+
+## While loops
+
+### Examples
+
+While loops allow you to iterate over inputs until you reach a point that you want to stop. Unlike for loops, which will iterate over everything you say to iterate over without stopping. In general, while loops are used much less frequently (and are more often used for simulation modeling, which is outside of the scope of this class).
+
+In this example, I'm starting with `i <- 1`. Every time the while loop runs, it adds 10 to `i`. The while loop will stop running if `i` gets to 100 or greater.
+
+```{r}
+
+i <- 1
+  
+while (i < 100){
+  i <- i + 10
+  print(i)
+}
+
+```
+
+In this case you will see that you end up with the number 101 being the last number printed. This is because when the last iteration of the loop started, `i` was 99 and so the loop ran, and printed out the new value of `i`. However, the next time the code checked if `i` was still less than 100, this was FALSE so the loop stopped running.
+
+Just like for loops, you don't technically have to use `i` so you may sometimes see a different stand in letter/character. The loop below does exactly the same thing. However, in this situation `i` is preferred due to the loop being a bit easier to read.
+
+```{r}
+
+my_number <- 1
+  
+while (my_number < 100){
+  my_number <- my_number + 10
+  print(my_number)
+}
+
+```
+
+### Practice problems
+
+5.  Write a while loop that randomly generates a number between 1 and 10, prints that number, and then stops once you've gotten a 7.
+
+\*hint: look [here](https://www.statology.org/r-random-number/) to see some examples of how to generate a single random number.
+
+```{r}
+
+# your code here
+
+```
+
+## Answer key
+
+1.  Imagine we are trying to identify people who tested positive who may be higher risk. Use the `which()` function to create a new tibble that only contains the rows for people who have COVID-19 and are 65 or older.
+
+```{r}
+
+high_risk <- data[which(data$test_result == TRUE & data$age >= 65), ]
+
+```
+
+2.  Now imagine you are asked to pull up the data for 2 specific people based on their `id` number (`id` numbers 2 and 10). Use the `which()` function to create a new tibble with only the data for these people.
+
+```{r}
+
+sample <- data[which(data$id == 2 | data$id == 10), ]
+
+```
+
+3.  Modify the for loop above to do the following:
+    -   print "Age (years)" if the variable is age
+    -   print "Number of contacts in the last 3 months" if the variable is `num_contacts`
+
+```{r}
+
+variables <- c("age", "num_contacts")
+
+for(x in variables) { 
+  label <- ifelse(x == "age", "Age (years)", 
+                   "Number of contacts in the last 3 months")
+  print(label)
+  print(summary(data[, x]))
+  
+}
+
+```
+
+4.  The sample `pet_data` dataset below contains the name, age, species, and weight (in pounds) of each of your GSI's pets. Write a for loop to calculate how they compare to a (made up) average household pet weight of 20 pounds, and print the result for each pet. Try to use some of the other things you've used in the course so far to print out a nicer looking summary of your results. There are multiple ways to do this!
+
+```{r}
+
+pet_data <- tibble(name = c("Artemis", "Tonks", "Rajah"), 
+                   age = c(7, 7, 13), 
+                   species = c("dog", "dog", "cat"), 
+                   weight = c(60, 50, 15))
+
+pet_names <- pet_data$name
+avg_weight <- 20
+
+for (pet in pet_names){
+  # extract weight for the given pet
+  weight <- pet_data[which(pet_data$name == pet), "weight"]
+  # calculate weight difference and get the absolute value of this
+  weight_diff <- abs(weight - 20)
+  # use ifelse to save a modifier phrase to say if the pet 
+  # is less than or more than the average weight
+  modifier <- ifelse(weight < avg_weight, "less than", "more than")
+  # here, paste is just combining some text and
+  # some things we have saved in our environment to make a nicer summary. 
+  print(paste(pet, "weighs", weight_diff, "pounds", modifier, "the average household pet."))
+}
+
+```
+
+5.  Write a while loop that randomly generates a number between 1 and 10, prints that number, and then stops once you've gotten a 7.
+
+\*hint: look [here](https://www.statology.org/r-random-number/) to see some examples of how to generate a single random number.
+
+```{r}
+
+while (x != 7){
+  x <- sample(1:10, 1)
+  print(x)
+}
+
+```

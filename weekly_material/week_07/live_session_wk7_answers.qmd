@@ -1,0 +1,153 @@
+---
+title: "PHW251 Live Session - October 7, 2025"
+format: html
+editor: visual
+---
+
+```{r setup}
+
+library(tidyverse)
+
+```
+
+# Creating objects and variables in R
+
+We are going to do just a bit of review on creating new objects and new variables within data frames and discuss the syntax of this code.
+
+We've seen some confusion around when to use quotations.
+
+In general: if you do not use quotes, R assumes you are referring to the name of an object, if you use quotes, it assumes you are simply entering a character string value. However in some cases R will be able to interpret what you are meaning to do -- but it's best to try to stick to normal conventions.
+
+See if you can find:
+
+1\. Are there any issues with the code below where we likely aren't getting the output we want? 2. Are there any syntax issues that aren't causing an error currently? Why should we still avoid these syntax issues?
+
+```{r}
+
+"num1" <- c(1:10)
+num2 <- c(1:10)
+
+class("num1")
+class(num2)
+
+"data" <- data.frame("1N" = c(1:10), 
+                     num2 = c(11:20))
+
+```
+
+ANSWER: Putting the name of the object in quotes will often work, but it will allow you to create non-valid names for objects which is problematic. Also when you later need to refer to those objects, you will typically need to NOT use quotes. For example the `class("num1")` function above does not check the class of the `num1` object, it checks the class of the character string `"num1"`. Similar applies to naming the variables within a data frame. Here the variable I've names "1N" will actually be names X1N because it's not valid to name a variable with a number at the beginning.
+
+Here we are going to load a sample data set from the medical data package. Lets say we want to create a new variable that is equal to 0 if the person lived, and equal to 1 if the person died. In our data, lets assume that anyone who received "purgative_mixture" as their treatment died.
+
+```{r}
+
+#install.packages("medicaldata")
+library(medicaldata)
+
+scurvy <- medicaldata::scurvy
+
+```
+
+2.  Is there an issue with the code below? If so, what is it?
+
+```{r}
+
+"scurvy" <- scurvy %>%
+  mutate(died = ifelse(treatment == "purgative_mixture", 1, 0))
+
+glimpse(scurvy)
+
+
+```
+
+ANSWER: It technically works in this situation but best practice would be to not put the object name `scurvy` in quotation marks on the left side of the arrow.
+
+3.  What if both patients who got the cider treatment and patients who got the purgative mixture as treatment died? Try creating this new variable two ways:
+
+    a\. Using dplyr methods `if_else` and `mutate`
+
+    b\. Using dplyr methods `case_when` and `mutate`
+
+```{r}
+#if_else
+scurvy1 <- scurvy %>%
+  mutate(died = if_else(treatment %in% c("purgative_mixture","cider"),1,0))
+
+#case_when
+scurvy2 <- scurvy %>%
+  mutate(died = case_when(treatment == "purgative_mixture" ~ 1, 
+                          treatment == "cider" ~ 1, 
+                          TRUE ~ 0))
+
+```
+
+## Problem Set 4 Bonus Review
+
+Here we are loading the data from problem set 4, and have the code for all of the prior steps in the homework combined with pipes.
+
+1.  What are some potential concerns of using this method? How can you help avoid these concerns?
+
+ANSWER: It can be harder to keep track of what you are doing, or to find errors when your code isn't working. These concerns can be avoided by frequently running sections of the code as you write them, for example, highlight and run the first line and the rename_with line to ensure it works correctly. Then try adding in the rename line, etc.
+
+2.  What are some benefits of using this method?
+
+ANSWER: you can avoid creating many objects in R for intermediary steps (or overwriting the same object in different steps). Streamlines the process of coding for data cleaning and often make it easier to read.
+
+3.  See if you can add a comment above each line saying what the code is doing.
+
+```{r}
+
+# load data
+data <- read.csv("500_Person_Gender_Height_Weight.csv")
+
+bmi_all1 <- data %>% 
+  # rename variable names
+  rename_with(~ tolower(gsub(" ","_", .x, fixed=TRUE))) %>%
+  rename(location = location.information) %>%
+  # create new BMI variable with calculation base on location
+  mutate(bmi = if_else(location %in% c("New York", "Colorado", "Hawaii"),
+                       (703 * weight)/(height * 12)^2, 
+                       weight/(height/100)^2),
+         # create categorical BMI variable based on BMI values
+         bmi_cat = case_when(bmi > 30    ~ "Obese",
+                             bmi > 25    ~ "Overweight",
+                             bmi > 18.4  ~ "Normal",
+                             TRUE        ~ "Underweight")) %>%
+  # arrange the data based on location and then BMI 
+  arrange(location, desc(bmi)) 
+
+```
+
+3.  What are the differences between the two sets of code below?
+
+```{r}
+
+bmi_all2 <- bmi_all1 %>%
+  group_by(location) %>%
+  arrange(bmi)
+
+bmi_all3 <- bmi_all1 %>%
+  arrange(location, bmi)
+
+```
+
+ANSWER: `group_by()` does not reorganize the data, it is an "invisible" to you grouping that should be used before summarizing by group, etc. only the option with `location` in the `arrange()` function will actually rearrange the data by location.
+
+4.  Now, try to summarize the average BMI by location, and make a table of this using kable.
+
+```{r}
+
+#install.packages("kableExtra")
+library(kableExtra)
+
+table_data <- bmi_all1 %>%
+  group_by(location) %>%
+  summarize(mean_bmi = mean(bmi), .groups = "drop")
+
+kable(table_data, format = "simple", 
+      col.names = c("Location", "BMI"),
+      caption = "Average BMI by Location", 
+      digits = 1) %>%
+      column_spec(column = 1, bold = TRUE)
+
+```

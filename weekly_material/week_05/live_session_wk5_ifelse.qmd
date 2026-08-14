@@ -1,0 +1,191 @@
+---
+title: "live session 2024-09-25"
+output: html_document
+date: "2023-09-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+
+```
+
+```{r ifthenelse}
+
+##if code structure
+
+# if(condition){
+#    if code     
+# } else {
+# 
+# }
+
+##ifelse code structure 
+
+# if(condition){
+#    if code     
+# } else if(condition){
+#   else code
+# } else{
+#   else code
+# }
+
+day <- "Monday"
+
+v <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Saturday")
+
+if(day=="Sunday"){
+  print("Run weekly report")
+  # code for weekly report
+} else if(day %in% v){
+  print("Run SHORT daily report")
+  # code for short report
+
+} else {
+
+  print("Run FULL daily report")
+  # code for full report
+}
+
+
+#numeric
+case_rate <- 45
+risk <- "low"
+
+if(case_rate>50){
+  risk <- "high"
+} else if(case_rate>25){
+  risk <- "medium"
+} else{
+  risk <- "low"
+}
+
+#ifelse(condition, if TRUE, if FALSE)
+
+case_rate_gp <- if_else(case_rate>50,"high","low")
+
+
+# These return the same result for a vector of length 1 (in this case 45)
+
+# But what if we want to transform a vector or list of rates longer than 1 into a risk
+
+case_rate_many <- c(98, 41, 23, 56, 50)
+
+if(case_rate_many>50){
+  risk <- "high"
+} else if(case_rate_many>25){
+  risk <- "medium"
+} else{
+  risk <- "low"
+}
+
+# This causes an error because it wants the result to be only length = 1
+# An alternative is to use ifelse which runs through the vector and yields a vector of results of the same length as the input
+
+case_rate_many_gp <- ifelse(case_rate_many>50,"high","low")
+case_rate_many_gp
+
+# nested ifelse example
+case_rate_many_gp <- ifelse(case_rate_many>50,"high",
+                            ifelse(case_rate_many>25, "medium", "low"))
+
+#replicating the original three level test with a nested ifelse function
+
+case_rate_many1 <- ifelse(case_rate_many<=25,"low",
+                            ifelse(case_rate_many<=50, "medium", "high"))
+case_rate_many1
+
+# another way to do it is using the between function
+case_rate_many2 <- ifelse(between(case_rate_many, 0, 25),"low",
+                            ifelse(between(case_rate_many, 26, 50), "medium", "high"))
+
+case_rate_many2
+
+
+```
+
+## 2 questions about if, else, then
+
+1.  Let's say we're in a laboratory and responsible for running a diagnostic test where the ambient temperature at the time of sample collection has to be between 20 degrees and 30 degrees celsius (68 - 86 degrees F). If a sample temp is within that range, we want to output "within range", if too low, we want to output "below range", and if it's above etc.
+
+```{r}
+
+# because we want to account for possible significant extremems
+sample_temperatures <- c(20, 25, 32, 38, 28, 27, 23, 23, 14, 14, 24, 20, 30)
+
+temp_range <- ifelse(sample_temperatures <20, "Too Low",
+                        ifelse(between(sample_temperatures, 20, 30), "Within Range", "Too high")
+)
+
+temp_range
+
+```
+
+2.  Now let's say with that output data, let's say as long as sample temperatures are in range, we don't need to care, and we don't want to break our attention from other important work is everything is working just fine. So we only want to generate an email warning if it's out of range. How would you do that? And for bonus points, take a look at the any() function example below. Using an in function with an any() function, how would that look?
+
+```{r}
+# use resulting vector from above
+
+if_else(temp_range != "Within Range", "Send Warning Email!!","")
+
+# This result still gives us an empty result for those within range
+# if we truly wanted to just check the whole batch and only send us one email if there was a problem,
+# We could use the any() function
+
+if(any(temp_range != "Within Range") == TRUE){print("Send Warning Email!!")}
+
+#
+# basically if any value in the vector is equal to 'orange' then the result is TRUE and if none are, then the result is FALSE
+if(any(c("cherry", "apple", "grape") == "orange") == FALSE){print("Low on oranges!")}
+if(any(c("cherry", "apple", "orange") == "orange") == FALSE){print("Low on oranges!")}
+
+
+```
+
+3.  What is the difference between the ifelse() function versus the if_else() function? When do you use one instead of the other?
+
+They do mostly the same things, but ifelse() is a function in base R and has slightly less flexible. Both do ifelse(<expression>, <TRUE condition>, <FALSE condition>). The function if_else() is part of dplyr and gives you the option of handling missing data more flexibly.
+
+## Loops
+
+```{r}
+
+# Why you want to avoid this
+
+county <- c("Alameda","Contra Costa","Sacramento")
+case_rate <- c(54,23,46)
+
+print(paste0(county[1], " case rate: ",case_rate[1]))
+print(paste0(county[2], " case rate: ",case_rate[1]))
+print(paste0(county[3], " case rate: ",case_rate[1]))
+
+# not a whole lot different from this
+
+for (i in 1:length(county)){
+   print(paste0(county[i]," case rate: ",case_rate[i]))
+}
+
+county <- c("Alameda","Contra Costa","Sacramento")
+cases <- c(540,235,466)
+pops <- c(12433, 9343, 8332)
+concern <- c(0.1, 0.2, 0.1)
+
+
+print(paste0(county[1], " case rate: ", round((cases[1] / pops[1]) *100000, 1)))
+print(paste0(county[2], " case rate: ",round((cases[2] / pops[2]) *100000, 1)))
+print(paste0(county[3], " case rate: ",round((cases[3] / pops[3]) *100000, 1)))
+
+for (i in 1:length(county)){
+   print(paste0(county[i]," case rate: ",round((cases[1] / pops[1]) *100000, 1)))
+}
+
+#while
+count <- 1
+
+while (count < 7) {
+   print(paste0("Hello, this is round ",count))
+   count <- count + 1
+}
+
+
+```

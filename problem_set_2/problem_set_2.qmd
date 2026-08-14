@@ -1,0 +1,213 @@
+---
+title: "PHW251 Problem Set 2"
+author: "Your name here"
+date: "today"
+format: pdf
+editor: visual
+---
+
+Submission process: Please submit your assignment directly to Gradescope. You can do this by rendering your file and downloading the PDF to your computer. Then navigate to [Gradescope.com](https://www.gradescope.com) or via the link on BCourses to submit your assignment.
+
+Helpful hints:
+
+-   Render your file early and often to minimize rendering errors! If you copy and paste code from the slides, you are bound to get an error that is hard to diagnose. Typing out the code is the way to smooth rendering. We recommend rendering your file each time after you write a few sentences/add a new code chunk, so you can detect the source of the rendering error more easily. You can render by clicking the blue "Render" arrow in the top menu bar in R studio. This will save you and the teaching team time!
+
+-   To render as PDF, you will need to have LaTeX installed. If you are using the datahub **this should already be there and you don't need to install or update**. If you are not using datahub, there is an R package to handle this! If you don't have LaTeX, you can un-comment and run the following code (note: you only need to do this once, and don't need to load this like other packages).
+
+```{r}
+
+# If you don't have LaTeX installed at all, 
+# uncomment and run the line below
+# install.packages("tinytex")
+
+# If you need to update LaTeX or run into rendering issues, 
+# uncomment and run the line below
+#tinytex::reinstall_tinytex()
+
+```
+
+-   Please make sure that your code does not run off the page of the rendered PDF. If it does, we can't see your work. To avoid this, have a look at your rendered PDF and ensure all the code fits in the file. When it doesn't, go back to your .qmd file and add spaces (new lines) using the return or enter key so that the code runs onto the next line.
+
+\newpage
+
+### Question 1
+
+Use the function Sys.Date() to get the current date. Save it in your environment.
+
+```{r get_date}
+
+# your code here
+
+```
+
+Use the class() function to see what kind of object your date is, and then use the typeof() function to see how it is stored in R.
+
+```{r class_typeof}
+
+# your code here
+
+```
+
+Why is your saved object both a Date and a double? HINT: try using as.numeric() on the object and think about what that number means.
+
+*TYPE YOUR ANSWER HERE*
+
+Dates in R are stored as the number of days before or after 1/1/1970, which is just a number (an integer stored as a double). Because the number came from Sys.Date(), R knows it is not just a normal number and instead displays it as a date.
+
+Look up the documentation for the lubridate function `wday` (short for weekday). Load the lubridate library and then pass your date object to `wday()` to get the day of the week *as an abbreviated name* e.g. "Sun" and "Mon". You will need to pass the function a second argument to make this happen. Save the result in your environment.
+
+```{r current_wday}
+library(lubridate)
+
+# your code here
+
+```
+
+Run this code chunk to save a vector of the seven days of the week. The levels() function returns a vector containing the names of all the levels of a factor.
+
+```{r days_vector}
+
+days <- levels(wday(Sys.Date(), label = TRUE))
+
+```
+
+Subset the vector of days to get a vector of *weekdays only* (Mon-Fri). You can pull out values from a vector by using a sequence of positions/indexes inside square brackets (see the lecture "Data Types and Objects in R"). Save the list of weekdays as a new object in your environment.
+
+```{r weekdays}
+
+# your code here
+
+```
+
+Is the current day you saved in the current_wday chunk above a weekday? Check using the %in% operator. Also check if the current day is in the days vector.
+
+```{r weekday_test}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 2
+
+if/else, vector math, logical ops
+
+Run this chunk as-is to load a dataset of [Mauna Loa carbon dioxide records](https://gml.noaa.gov/ccgg/trends/data.html) and plot CO2 levels over time. Importing and plotting data will be covered in an upcoming lecture--the graph is just for context.
+
+```{r co2_import}
+
+# read in the csv file and save it as a data frame in the environment
+co2 <- read.csv(file = "co2_mm_mlo.csv", skip = 51, header = TRUE, row.names = NULL)
+# label the columns
+colnames(co2) <- c("year","month","date","average","interpolated","trend","ndays")
+# display the data graphically
+plot(x = co2$date, y = co2$average, pch = 20, cex = 0.1, 
+     xlab = "Date", ylab = "Average CO2 (ppm)")
+# view the last few rows of the data in a table
+tail(co2)
+
+```
+
+Before the industrial revolution, the global concentration of carbon dioxide was about [280 parts per million](https://www.climate.gov/news-features/understanding-climate/climate-change-atmospheric-carbon-dioxide). Let's see if we can express CO2 levels over time as a percentage of pre-industrial levels.
+
+Start by extracting the average CO2 level column from the data frame. You can run this chunk as-is, since we haven't covered data frames in detail yet.
+
+```{r co2_extract}
+
+# pull the "average" column out of the data as a vector
+avg_co2 <- co2$average
+# this is another way to do the exact same thing
+avg_co2 <- co2[["average"]]
+
+```
+
+Print out the vector avg_co2
+
+```{r co2_print}
+
+# your code here
+
+```
+
+That's a lot of numbers! You wouldn't want to print all that in a report. Use the `summary()` function to get a more useful overview of the range of numbers in that vector.
+
+```{r co2_summary}
+
+# your code here
+
+```
+
+Create a vector that expresses the Mauna Loa CO2 levels as a percentage of pre-industrial levels (280 ppm). Save it as a new vector in your environment and print out a summary.
+
+```{r co2_percentage}
+
+# your code here
+
+```
+
+Let's say you're publishing a report about climate change and you want to have two versions of it for two different audiences. In one version, you want to report carbon dioxide concentration in parts per million. In the other, you want those numbers as a percentage of pre-industrial levels.
+
+Use if/else blocks to print a summary of Mauna Loa CO2 levels, where the format (ppm or percentage) depends on the logical indicator included in the code chunk below. Make sure you get the expected output when percentage is TRUE, and when percentage is FALSE.
+
+```{r if_else}
+
+percentage <- TRUE
+
+# your code here
+
+```
+
+Look at the date columns in the co2 data frame (you can view the whole table by clicking on "co2" in your environment pane). The "date" column in a decimal date format. Search the web for a function within the lubridate package that can convert a decimal date into the standard date format. Use that function on the vector of decimal dates and print the result. Make sure you set the correct time zone for Hawaii (search the web for the 3-letter abbreviation of that time zone and use that string as the argument)!
+
+```{r time_zone}
+
+co2$date
+
+# your code here
+
+```
+
+### Question 3
+
+Use a for loop to print out the result of multiplying the numbers 1-10 by 3.
+
+```{r for_loop}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 4
+
+Use a while loop to do the same thing. It's easy to accidentally create infinite loops; if your chunk takes more than a couple seconds to run, press the red square in the top right corner of the chunk to abort the loop.
+
+```{r while_loop}
+
+# your code here
+
+```
+
+\newpage
+
+### Question 5
+
+If you haven't created a GitHub account yet, do it now. Paste a link to your GitHub profile below:
+
+*LINK GOES HERE*
+
+### Question 6
+
+You're working on a group coding project with your classmates that's due soon. After a weekend away from your computer, you open R Studio to start working. What is the first git command you should run?
+
+*WRITE YOUR ANSWER HERE*
+
+### Question 7
+
+You write some new code, save your Qmd file, commit your changes to your local repository, and then go eat dinner. While you're eating, your teammate sends you a message asking where your new code is. What did you forget to do?
+
+*WRITE YOUR ANSWER HERE*
+
+You're done! Please render to pdf and upload to Gradescope.

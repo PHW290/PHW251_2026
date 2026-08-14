@@ -1,0 +1,320 @@
+---
+title: "Unexpected Data: Detection & Correction"
+subtitle: "Detecting Invalid Values"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+# Overview
+
+-   Unexpected and invalid values
+
+-   Methods for detecting unexpected or invalid values
+
+-   Example dataset
+
+## Objective
+
+-   Identify methods for detecting unexpected or invalid values
+
+## Unexpected or invalid values
+
++-----------------------+--------------------------------------------------------------------------------------+
+| Situation             | Examples                                                                             |
++=======================+======================================================================================+
+| Invalid values        | -   Out of numerical range                                                           |
+|                       |                                                                                      |
+|                       |     -   Typo                                                                         |
+|                       |                                                                                      |
+|                       |     -   True outlier                                                                 |
+|                       |                                                                                      |
+|                       | -   Invalid category or character string                                             |
++-----------------------+--------------------------------------------------------------------------------------+
+| Unexpected values     | -   Wrong type (char vs num)                                                         |
+|                       |                                                                                      |
+|                       | -   Incorrect or inconsistent cases (e.g. MALE vs male)                              |
+|                       |                                                                                      |
+|                       | -   Duplicates                                                                       |
++-----------------------+--------------------------------------------------------------------------------------+
+| Conditionally invalid | -   Value appears valid alone, but is invalid because of other information           |
+|                       |                                                                                      |
+|                       |     -   e.g. city = Oakland, state = AZ are not a valid combo                        |
+|                       |                                                                                      |
+|                       |     -   e.g. number of positive tests cannot be higher than the number of total test |
++-----------------------+--------------------------------------------------------------------------------------+
+| Missing               | -   Values that should not be missing                                                |
+|                       |                                                                                      |
+|                       | -   Values that should be missing                                                    |
++-----------------------+--------------------------------------------------------------------------------------+
+
+## Example
+
+The data we will use tracks the testing counts by group.
+
+**Goal:** Calculate positivity rates by day for Group 1 and Group 2 in August 2020.
+
+Columns:
+
+-   test_date
+
+-   group
+
+-   total_tests
+
+-   pos_tests
+
+-   group_pop
+
+```{r, echo=F, warning=F, message=F}
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+# load data
+file_path <- "data/testing_example.xlsx"
+
+testing <- readxl::read_excel(
+  file_path,
+  na="NA"
+)
+
+#confirm total_tests is now numeric
+str(testing)
+```
+
+## Detecting invalid and unexpected values
+
+### Handling unexpected values
+
++----------------------------------------+-------------------------------------+
+| **Identifying and detecting**          | **Handling and/or correcting**      |
++----------------------------------------+-------------------------------------+
+| -   Looking at the data                | -   Excluding rows / values         |
+|                                        |                                     |
+| -   Creating temporary variables       | -   Recoding values to other values |
+|                                        |                                     |
+| -   Functions for frequency or summary | -   Recoding to missing             |
+|                                        |                                     |
+| -   Plots                              | -   Filling in missing              |
++----------------------------------------+-------------------------------------+
+
+### Old fashioned way
+
+-   Look at the data!
+
+-   Sort and scroll
+
+-   Logical comparisons
+
+-   New temporary variables
+
+These methods are helpful for detecting outliers and whether values are conditionally invalid.
+
+### Utilize descriptive functions
+
+-   `unique()` - list of unique values
+
+-   `table` - frequency
+
+    -   useNA to include frequency of `NA` ("ifany" to include when relevant, "always" to include regardless)
+
+    -   can cross tab
+
+-   `summary()` - numeric statistics
+
+-   `sum(is.na())` - count number of missing
+
+We can see two dates have a value of `NA`. Here's three ways to find that out!
+
+```{r}
+#frequency base R
+table(testing$test_date, useNA = "always")
+
+#frequency tidyverse
+date_freq <- testing %>% 
+  group_by(test_date) %>%
+  summarize(count=n())
+```
+
+```{r}
+summary(as_date(testing$test_date))
+```
+
+```{r}
+sum(is.na(testing$test_date))
+```
+
+We can also see that we have dates outside of 2020, which we'll need to remove later.
+
++-----------+------------------------------+
+| Field     | Issue                        |
++===========+==============================+
+| Test date | -   Out of range and missing |
++-----------+------------------------------+
+
+Now let's take a look at the groups. We're only interested in Groups 1 and 2.
+
+```{r}
+unique(testing$group)
+```
+
+```{r}
+table(testing$group, useNA = "ifany")
+```
+
+Seems like we have a number of typos and potentially groups outside of 1 and 2 that we don't need. We'll need to standardize group names, remove group 3 and the `NA`'s before analyzing. It will also be more meaningful to have the groups named for the city (group 1 represents San Diego and group 2 represents LA).
+
++-------+----------------------------------+
+| Field | Issue                            |
++=======+==================================+
+| Group | -   Invalid group names; missing |
+|       |                                  |
+|       | -   Single record for group 3    |
+|       |                                  |
+|       | -   Change groups to city names  |
++-------+----------------------------------+
+
+Now let's take a look at the **total tests.**
+
+```{r}
+summary(testing$total_tests)
+sum(is.na(testing$total_tests))
+```
+
+There's a huge outlier of 45000 that we'll need to investigate.
+
+How about **positive tests?**
+
+```{r}
+summary(testing$pos_tests)
+sum(is.na(testing$pos_tests))
+```
+
+Not too bad, but we'll need to compare with total tests later.
+
+Lastly let's check group population.
+
+```{r}
+table(testing$group, testing$group_pop, useNA = "always")
+```
+
+Seems consistent for Group 1 and 2.
+
+### Creating temporary variables
+
+Let's create new logical variables to help with continuing to look at our **testing and population data**.
+
+-   `total_gt_pos` will return TRUE where `total_tests` \> `pos_tests`
+
+-   `total_gt_pop` will return TRUE where `group_pop` \> `total_tests`
+
+```{r}
+# create our testing variables
+testing_temp <- testing %>%
+  mutate(total_gt_pos = total_tests > pos_tests,
+         total_gt_pop = group_pop > total_tests)
+
+# we can filter for our variables or use View(testing_temp) to look
+testing_temp %>% 
+  select(group_pop, total_tests, pos_tests, total_gt_pos, total_gt_pop) %>% 
+  filter(total_gt_pos == FALSE | total_gt_pop == FALSE)
+```
+
+One instance where `pos_tests` \> `total_tests` - data entry error?
+
+One instance where `total_tests` \> `group_pop` - outlier?
+
+### Plots
+
+We'll use `ggplot()` for flexible plotting of one or two variables.
+
+#### One variable
+
+```{r}
+# categorical - group
+# bar graph
+ggplot(data = testing, mapping = aes(x = group)) +
+  geom_bar()
+```
+
+```{r}
+# continuous - positive tests
+# histogram
+ggplot(data = testing, mapping = aes(x = pos_tests)) +
+  geom_histogram(binwidth = 5)
+```
+
+```{r}
+# continuous - total tests
+# histogram
+ggplot(data = testing, mapping = aes(x = total_tests)) +
+  geom_histogram(binwidth = 50) +
+  xlim(0, 500)
+```
+
+#### Two variables
+
+```{r}
+# two continuous
+# scatterplot
+ggplot(data = testing, mapping = aes(x = total_tests, y = pos_tests)) +
+  geom_count() +
+  xlim(0, 500)
+```
+
+```{r}
+# one continuous, one categorical
+# scatterplot
+ggplot(data = testing, mapping = aes(x = total_tests, y = group)) + 
+  geom_count() +
+  xlim(0, 500)
+```
+
+```{r}
+# one categorical, one continuous
+# boxplot
+ggplot(data = testing, mapping = aes(x = total_tests, y = group)) + 
+  geom_boxplot() +
+  xlim(0, 500)
+```
+
+```{r}
+# two continuous
+# scatterplot + trend line
+ggplot(data = testing, mapping = aes(x = total_tests, y = pos_tests)) + 
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  xlim(0,10) +
+  ylim(0,10)
+```
+
+```{r}
+# one continuous, one categorical
+# scatterplot + trend line
+ggplot(data = testing_temp, mapping = aes(x = group_pop, y = total_tests)) + 
+  geom_point()  +
+  geom_abline(intercept = 0, slope = 1) 
+```
+
++----------------+------------------------------+
+| Field          | Issue                        |
++================+==============================+
+| Total tests    | -   "NA" vs NA; numeric      |
+|                |                              |
+|                | -   Outlier                  |
+|                |                              |
+|                | -   Missing values           |
++----------------+------------------------------+
+| Positive tests | -   Missing values           |
+|                |                              |
+|                | -   Greater than total tests |
++----------------+------------------------------+

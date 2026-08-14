@@ -1,0 +1,280 @@
+---
+title: "Joining and Merging Data"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r, echo=F, warning=F, message=F}
+library(data.table)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(tidyverse)
+```
+
+## Objectives
+
+1.  Understand situations where joins are useful
+2.  Identify different types of joins and when to use them
+3.  Understand complex joins and multiple table joins
+
+## Why are joins useful?
+
+Robust data analysis often requires pulling together different types of data from different domains.
+
+![](images/0_data_domains.jpg){fig-align="center"}To be able to pull these different types of data together in a meaningful way, you need to identify commonalities across domains and use those to 'join' data together. Sometimes different domains are organized and stored in a database or data warehouse. These are often designed to optimize joining data from different domains.
+
+But often, joining data from different systems, with different priorities (and are designed around those priorities instead of your priorities), will mean you'll have to create your own linkages to join on. This will probably require some research, skill and creativity, but is a really valuable skill to have.
+
+## Overview
+
+-   Keys for joining
+
+    -   Single columns
+
+    -   Multiple columns
+
+-   Types of joins
+
+    -   Inner
+
+    -   Left
+
+    -   Right
+
+    -   Full
+
+    -   Semi
+
+    -   Anti
+
+-   Use cases
+
+## Joining data
+
+-   Every data wrangling package has a set of merge functions
+
+    -   Base R: `merge(x, y, by = (or by.x = by.y))`
+
+    -   `data.table()` defines join types by using different key types and by using a `merge()` function
+
+    -   dplyr: `inner_join(x, y, by = c("x_column" = "y_column")`
+
+-   The syntax for all joins are based on SQL:
+
+    ```{r, eval=F}
+    SELECT x.fields, y.fields
+    FROM x
+    LEFT JOIN y ON x.ID = y.ID
+    ```
+
+Join definitions:
+
+![](images/1_joins_setup.jpg){fig-align="center"}
+
+| Join Type | Definition                                                                                                                                                |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Inner     | Returns only the rows that have matching values in both tables being joined.                                                                              |
+| Left      | Returns all the rows from the left table and the matching rows from the right table, with NULL values for the right table's columns if there is no match. |
+| Right     | Similar to the left join, but returns all the rows from the right table and the matching rows from the left table.                                        |
+| Full      | Returns all rows when there is a match in either the left or right table, with NULL values for the non-matching side                                      |
+| Semi      | Tests the existence of matching rows in the second table and returns rows from the first table based on this condition.                                   |
+| Anti      | Returns rows from the first table where there is no match in the second table.                                                                            |
+
+### dplyr joining: relational data
+
+Let's say we have two tables: `Person` and `Transaction` . We want to join these tables where there is a matching value in the primary key column `ID`.
+
+![](images/1_joins_setup.jpg){fig-align="center"}
+
+Here's the data in R.
+
+```{r}
+person_table <- read_csv("data/person_table.csv")
+transaction_table <- read_csv("data/transaction_table.csv")
+```
+
+#### Inner join
+
+![](images/2_joins_inner.jpg){fig-align="center"}
+
+```{r}
+inner_join(x = person_table, y = transaction_table, by = "ID")
+```
+
+#### Left join
+
+![](images/3_joins_left.jpg){fig-align="center"}
+
+```{r}
+left_join(x = person_table, y = transaction_table, by = "ID")
+```
+
+## More about joins
+
+Now that you're familiar with inner and left joins, here's a few more joins with new data and more complex situations.
+
+```{r, warning=F, message=F}
+# load our data
+demog <- fread("data/CAp3_2020_demographics.csv") %>%
+  select(year, 
+         age, 
+         gender, 
+         race_ethnicity,
+         county, 
+         pop,
+         caloes_region, 
+         econ_reg) %>%
+  group_by(county) %>%
+  summarize(total_pop = sum(pop)) %>%
+  ungroup()
+
+oshpd_payers <- fread("data/inpatient_payer_ca.csv") %>%
+  rename_all(. %>% tolower %>% gsub(" ", "_", .) %>% gsub("/", "_", .)) %>%
+  mutate(county_name = str_to_title(county_name)) %>%
+  as_tibble() %>%
+  group_by(county_name, year) %>%
+  summarize(total_patients = replace_na(sum(count), 0)) 
+
+print('Table: demog'); head(demog)
+print('Table: oshpd_payers'); head(oshpd_payers)
+```
+
+### Key column must be present in both tables
+
+The following inner join works because we can match `oshpd_payers$county_name` to `demog$county`.
+
+```{r}
+inner_joined <- 
+  inner_join(oshpd_payers, demog, 
+             by = c("county_name" = "county")) %>%
+  mutate(visit_per_capita = total_patients / total_pop)
+
+head(inner_joined)
+```
+
+However, if we try to match by `year` as well, we run into an error since both tables do not have the column `year`.
+
+```{r, error=T}
+inner_joined_fail <- 
+  inner_join(oshpd_payers, demog, 
+             by = c("county_name" = "county",  "year")) %>%
+  mutate(visit_per_capita = total_patients / total_pop)
+```
+
+### Think carefully about the table you want
+
+A left join table will look different than a right joined table, depending on the order you use. Let's assume we always keep `oshpd_payers` as `x` and `demog` as `y`. In the following example we'll see that many of the row values do in fact match, but that one type of join results in more rows. When we're working with data we need to carefully evaluate what kind of output we're looking for.
+
+Left joined.
+
+```{r}
+left_joined <- 
+  left_join(oshpd_payers, demog, by=c("county_name" = "county")) %>%
+  mutate(visit_per_capita = total_patients / total_pop)
+
+dim(left_joined)
+```
+
+Right joined.
+
+```{r}
+right_joined <- 
+  right_join(oshpd_payers, demog, by=c("county_name" = "county")) %>%
+  mutate(visit_per_capita = total_patients / total_pop)
+
+dim(right_joined)
+```
+
+If we want to capture all possible kinds of combinations, we can use a full join.
+
+```{r}
+full_join <- 
+  full_join(oshpd_payers, demog, by=c("county_name" = "county")) %>%
+  mutate(visit_per_capita = total_patients / total_pop)
+
+dim(full_join)
+```
+
+**Note:** Word of caution - it looks like we have two rows on the right side table that don't exist on the left side table. This can cause problems in your analysis depending on what you're trying to analyze. We can identify what those are using an anti-join.
+
+If we want to return all rows in `x` where there is not a match in `y`, we can use an anti join. In this case we have no mismatches.
+
+```{r}
+anti_join <- 
+  anti_join(oshpd_payers, demog, by=c("county_name" = "county")) 
+
+dim(anti_join)
+
+```
+
+However as we noticed in the row count difference between in left and right joins, we may have rows in `demog` that don't exist in `oshpd_payers`. We can reveal what those are if we flip the anti-join around, where we want to return all rows in `demog` where there is not a match in `oshpd_payers`, then we can see we have two mismatches (e.g. two rows in `demog` that don't exist in `oshpd_payers`). Also note that when I flip the order of the dataframes in the function, I also had to flip the order of the keys in the `by` argument.
+
+```{r}
+anti_join1 <- 
+  anti_join(demog, oshpd_payers, by=c("county" = "county_name")) 
+
+dim(anti_join1)
+print(anti_join1)
+
+```
+
+We can see that Alpine and Sierra counties (two small-population counties in California) don't have a record in the `oshpd_payers` table, so that explains the discrepency between the right and left join results. In a situation where you want to ensure that you keep rows for all counties, especially if it's valid to report a `0 payers` result for those two counties, you'd want to perform a right join instead of a left join.
+
+Lastly, if we wanted to keep any matching rows in `x` that are present in `y` but you want the resulting table to include only columns from `x` and you don't want any columns in the `y` dataframe, we can use a semi join. In this case a semi join will return the same number of rows as a left join but the key difference is that in a left join all of the columns in both x and y will be included, while in a semi join we only keep those in table x.
+
+```{r}
+semi_join <- 
+  semi_join(oshpd_payers, demog, by=c("county_name" = "county")) 
+
+dim(semi_join)
+
+```
+
+If we performed a semi join and reversed the order of the tables, the resulting table would contain only the unique rows in `demog` that have at least one matching row in `oshpd_payers`. So in this case, again since Alpine and Sierra counties don't have a record in the `oshpd_payers` table, the resulting table has only 56 rows and only the two columns in `demog`.
+
+```{r}
+
+semi_join_R <- 
+  semi_join(demog, oshpd_payers, by=c("county" = "county_name")) 
+
+dim(semi_join_R)
+
+```
+
+### reduce()
+
+You may find yourself in a situation where you need to join many tables, which often results in a series of left joins. There's no problem with this approach, but there are some programmatic ways to reduce the amount of code you need to write.
+
+Let's say we had three separate datasets for the years 2010, 2011, 2012.
+
+```{r}
+# setup for example
+demog_2010_20 <- fread("data/DOFP3_2010_2020_demo.csv")
+
+left_joined <- oshpd_payers %>%
+  left_join(., demog_2010_20, by=c("county_name" = "county", "year" = "year"))  %>%
+  mutate(visit_per_capita = total_patients / dof_pop)
+
+lj_2010 <- select(filter(left_joined, year == "2010"), county_name, year, visit_per_capita)
+lj_2011 <- select(filter(left_joined, year == "2011"), county_name, year, visit_per_capita)
+lj_2012 <- select(filter(left_joined, year == "2012"), county_name, year, visit_per_capita)
+```
+
+We could write a series of left joins to combine these data, as we've shown above. We can also use a neat function called `reduce()` , which combines the elements of a vector into a single value.
+
+```{r}
+reduced <- Reduce(function(...) merge(..., by='county_name', all.x=TRUE), list(lj_2010,lj_2011,lj_2012))
+
+head(reduced)
+```
+
+Additional reading: [The R for Data Science (2e) book has a great chapter with more examples of joins](https://r4ds.hadley.nz/joins.html).

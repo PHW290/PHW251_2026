@@ -1,0 +1,182 @@
+---
+title: "Stringr Toolbox"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+Stringr is a package created by RStudio for manipulating strings. Much of what the stringr functions do can be also done with other regular expression functions in base R and the stringr documentation provides a [handy crosswalk](https://stringr.tidyverse.org/articles/from-base.html). However, stringr provides some processing advantage over the base R functions because it makes use of a C library. So if you are ever in the position of having to parse strings in large datasets, processing that data with stringr will likely go faster than with using the base R functions.
+
+The [stringr documentation](https://stringr.tidyverse.org/index.html) and [cheatsheet](https://github.com/rstudio/cheatsheets/blob/master/strings.pdf) are full of good explanations of how to use these functions, but this tool box will just focus on scenarios when you might most often use these.
+
+```{r setup, include=FALSE}
+library(stringr)
+library(dplyr)
+```
+
+## Detecting patterns in a string
+
+### A simple example using fruit
+
+```{r detect_patterns, message=F, warning=F}
+
+# simple example
+fruit <- c("apple", "banana", "pinapple", "orange", "mango")
+
+# fruits that have at least one letter e
+str_detect(fruit, "e")
+
+# returning only those with a letter e would then be
+
+fruit[str_detect(fruit, "e")]
+
+# this exact functionality can also done with str_subset
+
+str_subset(fruit, "e")
+
+# returning only those with e or o
+
+fruit[str_detect(fruit, "e|o")]
+
+# Recoding a data frame column based on whether a fruit has the letter e 
+
+fruit_df <- data.frame(fruit_name = fruit)
+fruit_df$favorites <- if_else(str_detect(fruit_df$fruit_name, "e") == T, "Favorite", "Not Favorite")
+
+```
+
+### A more practical and useful example
+
+Electronic lab results (also survey responses) often have some computer coded fields along with some open format fields. If there's a consistent enough pattern, you could discern a way to recode open format fields to a more standardized value.
+
+```{r detect_patterns_ii, message=F, warning=F}
+
+lab_test_result <- data.frame(result_description = c("Positive", "Pos", "Negative", "Test result positive", "Result exceeded threshold", "Test result negative", "Below threshold", "BT<234 conc", "LCC-23940930 Pos 20210922", "QLC233490903 Below Thrshold"))
+
+lab_result_final <- lab_test_result %>%
+  mutate(result_recode = case_when(str_detect(result_description, "Positive|Pos|exceeded") == T ~ "Positive",
+                                   str_detect(result_description, "Negative|Below|<") == T ~ "Negative",
+                                   TRUE ~ "Unknown"
+                                   )
+         )
+lab_result_final
+
+
+```
+
+Note that this recode scheme missed coding two descriptions. One way to handle that is to standardize text into all caps or all lower case and then set the patterns that str_detect is looking for to match.
+
+```{r detect_patterns_ii_fix, message=F, warning=F}
+
+lab_result_final <- lab_test_result %>%
+  mutate(result_recode = case_when(str_detect(str_to_lower(result_description), "positive|pos|exceeded") == T ~ "Positive",
+                                   str_detect(str_to_lower(result_description), "negative|below|<") == T ~ "Negative",
+                                   TRUE ~ "Unknown"
+                                   )
+         )
+
+print(lab_result_final)
+
+```
+
+Recoding this way can save a lot of time and effort in manual recoding, but it's also susceptible to unwanted misclassification errors. For example, the less than symbol (\<) can be used to mean a lot of things, so in a real example, I would not recommend using only that to code a negative value unless you can confirm that indicating "less than threshold" is the only way it is used in a field. It's good practice to review these recode rules - both to examine what is being missed - i.e. filter(result_recode == "Unknown") - and to sample what is not unknown and manually review for errors.
+
+## Subsetting strings
+
+Subsetting strings can be used in a lot of different ways, especially for pulling out only key or useful parts of a longer string. Using str_sub, you can specify the exact position of the part of the string that you want to pull out. For example if a response field that you're interested in is always preceded by an 8 character ID, you can use str_sub like this:
+
+```{r}
+
+# the function takes the source string, the start position and the end position. In this case, it is length of 1 so the start and end positions are both 9.
+info <- c("23949390Y", "12939029N2334", "19866029Y", "99854229Y", "14515697U")
+str_sub(info, 9, 9)
+
+# if the useful data has variable length and you know for certain there's nothing else after the meaningful part, you can leave off the end position and it will default to take the rest of whatever is in the vector
+
+info <- c("23949390Yes", "12939029No", "19866029Sometimes", "99854229Disagree", "14515697Carrots")
+str_sub(info, 9)
+```
+
+### A more complicated example (this is just for future reference)
+
+In a situation where the ID is not a consistent length, you'll have to get a little more creative. If there is a character that consistently identifies the end of the ID and the beginning of useful information (often times a pipe (\|) character or could be \$, #, etc), you can nest an str_which function, which returns the position of pattern, to give str_sub the start location.
+
+str_locate can be used to identify the index (in other words the numeric position in a string) location of a specified string. Note: because the pipe symbol can be used to mean other things in regex, it is considered a special character. To refer to it (or any other special characters) within a statement, you have to put brackets around it and precede it with single slash "/" mark. So if a slash mark was used as a delimiter in this example, you would have to refer to it as "\[//\]"
+
+```{r}
+
+info_odd <- c("2394|Yes", "129390|No", "1986602|Sometimes", "99854229|Disagree", "12|Carrots")
+str_locate(info_odd, "[/|]")
+```
+
+We can use the start location using str_locate - str_locate(info_odd, "\[/\|\]")\[,1\] - to tell str_sub where to start picking up the useful information. The start of the useful response in the strings is the location of the pipe character + 1. So...
+
+```{r}
+
+# pulls out only the starting location
+str_locate(info_odd, "[/|]")[,1]
+
+# so in order to pull out only the responses in this example (and remember to add the + 1 in order to avoid also picking up the pipes), 
+
+str_sub(info_odd, str_locate(info_odd, "[/|]")[,1] +1)
+
+```
+
+## Clearing out unwanted character with str_replace and str_remove
+
+This is where we might use stringr most often, when we have non-standardized information in a field and want to standardize it, or we know there are bad or non-useful characters in a field and want to get rid of them. The analog in base R for str_replace is something you've already used for standardizing column names (grepl). For both of these functions, the regular version will only remove the first instance of the pattern, where as the \_all version will remove all instances of the identified patterns.
+
+```{r}
+
+# replaces spaces with underscores and converts everything to lower case
+str_to_lower(str_replace_all("Lab test Result COLUMN", " ", "_"))
+
+# Similar to the first example, you can replace multiple characters with underscore using the pipe "|" character
+str_to_lower(str_replace_all("Lab test Result COLUMN#5", "[ |#]", "_"))
+
+```
+
+You can use either str_replace (with an empty string "" as the replacement) or str_remove. This is particularly useful when clearing out unneeded spaces in long text columns, cleaning long text columns, or getting rid of tab, carriage return and other hidden characters that computer systems sometimes insert into text strings.
+
+```{r}
+
+dirty_data <- "%&%Result%&%2234342%&%"
+str_replace_all(dirty_data, "[%|&]", "")
+
+# is the same as
+
+str_remove_all(dirty_data, "[%|&]")
+
+# If we only want the number, we can also include the word result
+
+str_remove_all(dirty_data, "[%|&|Result]")
+
+```
+
+In a situation like this when we have multiple patterns that we want to get rid of, we can specify to get rid all alphabetic and punctuation characters using the 'alpha' and 'punct' keywords separated by a pipe '\|'
+
+```{r}
+
+dirty_data2 <- c("20210809%&%Negative%&%2234342%&%", "%&%Positive%&%159481%&%", "%&%Indeterminate%&%157781%&%")
+str_remove_all(dirty_data2, "[[:punct:]]|[[:alpha:]]")
+
+# or alternatively if you knew you only wanted digits, you can specify remove everything except digits using a carat '^' symbol after the first bracket like this
+
+str_remove_all(dirty_data2, "[^[:digit:]]")
+
+# or similarly if it was the Positive, Negative, Indeterminate that you wanted, you could specify removing everything but alpha
+
+str_remove_all(dirty_data2, "[^[:alpha:]]")
+
+# And finally, if you run into some really wild characters, which can happen when data are stored in different operating systems, you can get rid of those characters by specifying removal of all characters except for ASCII recognized characters
+
+str_remove_all("ï¿½ Hidden string here =ï¿½ï¿½> Oï¿½OMï¿½Pï¿½ïH¿½<[]>", "[^[:ASCII:]]")
+
+```

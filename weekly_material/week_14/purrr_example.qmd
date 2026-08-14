@@ -1,0 +1,138 @@
+---
+title: "Purrr Example"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r, message=F, warning=F}
+library(dplyr)
+library(magrittr)
+library(readr)
+library(purrr)
+library(readxl)
+```
+
+## Introduction to Purrr and Functional Programming
+
+The `purrr` package, a part of the `tidyverse`, empowers R users with functional programming tools. These tools enable more concise, robust, and readable code. By reducing code complexity and repetition, you lower the risk of errors. [Check out the purrr documentation.](https://purrr.tidyverse.org/)
+
+Remember the **Rule of Three**: If an action repeats more than three times, consider writing a function. It reduces susceptibility to random errors and streamlines your code.
+
+Purrr supports the rule of three by providing a complete and consistent set of tools for working with functions and vectors. The benefits of using purrr to support functional programming are:
+
+1.  **Consistency:** Avoid discrepancies when processing multiple similar tasks (e.g. loading data from various sheets or running the same analysis on different datasets).
+2.  **Efficiency**: Condense repetitive tasks into a compact functional form, making the code more readable.
+3.  **Flexibility**: Easily accommodate additions or changes, ensuring they apply consistently across tasks.
+
+We will cover an overview of purrr, but if you want a deeper dive consider:
+
+-   [Video on Advanced Programming with purrr](https://www.youtube.com/watch?v=bzUmK0Y07ck)
+
+-   [R for Data Science: Iteration Chapter](https://r4ds.hadley.nz/iteration.html#introduction)
+
+## Examples
+
+### Loading multiple spread sheets
+
+We have a spreadsheet with multiple sheets and need to load all of them. A straightforward but time consuming way is to write a `read_excel()` statement for each sheet.
+
+```{r}
+site_file <- "data/test_sites.xlsx"
+
+siteA <- read_excel(site_file, sheet = "site_A") %>%
+  select(uniqueid, age, gender, payer, undetectable, referred)
+
+siteB <- read_excel(site_file, sheet = "site_B") %>%
+  select(uniqueid, age, gender, payer, undetectable, referred)
+
+siteC <- read_excel(site_file, sheet = "site_C") %>%
+  select(uniqueid, age, gender, payer, undetectable, referred)
+
+all_sites0 <- bind_rows(siteA, siteB, siteC)
+```
+
+Now that I've loaded my data, I want to add a `previous_visit` data point, but I forget to add that column to one of my datasets.
+
+```{r}
+site_file <- "data/test_sites.xlsx"
+
+siteA <- read_excel(site_file, sheet = "site_A") %>%
+  select(uniqueid, age, gender, payer, undetectable, previous_visit, referred)
+
+siteB <- read_excel(site_file, sheet = "site_B") %>%
+  select(uniqueid, age, gender, payer, undetectable, previous_visit, referred)
+
+siteC <- read_excel(site_file, sheet = "site_C") %>%
+  select(uniqueid, age, gender, payer, undetectable, referred)
+
+all_sites0 <- bind_rows(siteA, siteB, siteC)
+```
+
+If I don't notice that mistake, I'm in trouble!
+
+A *better* way around, using a functional programming approach, is to treat this loading step as if I'm applying a function across each sheet.
+
+```{r}
+# create a vector of sheets to read in
+import_sheets <- c("site_A", "site_B", "site_C")
+
+# use purrr's map_df() function to apply the read_excel() function to each
+# vector of inport_sheets
+all_sites3 <- map_df(import_sheets, 
+                     ~read_excel(site_file, sheet = .x) %>%
+                       select(uniqueid, age, gender, payer, previous_visit,
+                              undetectable, referred)
+)
+```
+
+We can get a bit fancier by skipping the `import_sheets` step since `read_excel()` has a built in ability to pull all the sheets in of a file.
+
+```{r}
+all_sites4 <- map_df(excel_sheets("data/test_sites.xlsx"),
+                     ~read_excel(site_file, sheet = .x) %>%
+                       select(uniqueid, age, gender, payer, previous_visit,
+                              undetectable, referred)
+)
+```
+
+### Simplified Modeling Across Groups
+
+Putting on our epidemiology / biostatistics hats, we can use the following example to demonstrate how you might apply the same model to different datasets.
+
+```{r}
+# create three distinct data frames one for each unique value of the cyl column - results in a list of dataframes
+
+test <- mtcars %>%
+  split(.$cyl)
+
+# generate a linear model of mpg as a function of wt for each cyl data frames
+
+test <- mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .x)) 
+
+# from that resulting list, pull out the model summary for each
+
+test <- mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .x)) %>%
+  map(summary) 
+
+# from that resulting list, pull out only the r.squared values (you could pull out whatever you need to evaluate)
+
+test <- mtcars %>%
+  split(.$cyl) %>%
+  map(~ lm(mpg ~ wt, data = .x)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+
+test
+```

@@ -1,0 +1,520 @@
+---
+title: "Tidying Data, Part 1"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+# Overview
+
+-   Tidying (manipulating) data
+
+    -   Subsetting rows
+
+    -   Subsetting columns
+
+    -   Adding rows / columns
+
+    -   Creating new variables
+
+-   Tidyverse
+
+    -   dplyr
+
+    -   Compare to base R
+
+-   Functions for new variables
+
+## Objectives
+
+1.  Identify methods for manipulating table rows including extracting rows and sorting
+2.  Identify methods for manipulating table columns including extracting columns, re-ordering, and creating new variables
+3.  Understand functions available for creating new variables
+4.  Compare tidyverse/dplyr to base R
+
+## dplyr introduction
+
+[`dplyr`](https://dplyr.tidyverse.org/) is a package within the tidyverse that acts as a grammar of data manipulation by providing a consistent set of verbs to solve data manipulation challenges. Compared to base R, dplyr is more intuitive, flexible, and works well within the tidyverse package ecosystem.
+
+-   `mutate()` adds new variables that are functions of existing variables
+
+-   `select()` picks variables based on their names
+
+-   `filter()` picks cases based on their values
+
+-   `summarise()` reduces multiple values down to a single summary
+
+-   `arrange()` changes the ordering of the rows
+
+-   `group_by()` allows you to perform any operation "by group"
+
+### Loading data
+
+```{r, warning=F, message=F}
+library(tidyverse)
+
+# import table of infectious disease by county in CA
+file_path <- "data/odp_idb_2001_2022_ddg_compliant.csv"
+
+ids <- read_csv(
+  file_path,
+  na = c("", "NA", "-")
+)
+
+# check out the structure 
+str(ids)
+```
+
+## Manipulating rows with dplyr
+
+We'll focus on the following functions for manipulating rows with dplyr.
+
++---------------+-------------------+---------------------------------------------+
+| Operation     | Function          | Description                                 |
++===============+===================+=============================================+
+| Extract rows  | filter()          | Filter observations (rows) by their values  |
++---------------+-------------------+---------------------------------------------+
+| Extract rows  | slice()           | Select rows by position                     |
++---------------+-------------------+---------------------------------------------+
+| Extract rows  | sample_frac()     | Randomly select fraction or numbers of rows |
+|               |                   |                                             |
+|               | sample_n()        |                                             |
++---------------+-------------------+---------------------------------------------+
+| Extract rows  | distinct()        | Select unique rows                          |
++---------------+-------------------+---------------------------------------------+
+| Order         | arrange()         | Arrange rows in specified order             |
++---------------+-------------------+---------------------------------------------+
+| Add           | tibble::add_row() | Add a row to a table                        |
++---------------+-------------------+---------------------------------------------+
+
+### filter()
+
+Extract / subset rows from a table based on column values.
+
+You will need to familiarize yourself with operators.
+
+|              |           |
+|--------------|-----------|
+| equal        | ==        |
+| not equal    | !=        |
+| greater than | \> or \>= |
+| less than    | \< or \<= |
+| in           | %in%      |
+| not in       | !%in%     |
+| and          | &         |
+| or           | \|        |
+
+And a few functions.
+
+|           |                                                  |
+|-----------|--------------------------------------------------|
+| is.na()   | returns TRUE if value is missing                 |
+| !is.na()  | returns TRUE if value is not missing             |
+| between() | Detects where a value falls in a specified range |
+
+#### Base R syntax
+
+```{r, eval=F}
+df[df$county == "San Diego", ]
+df[which(df$cases == 100), ]
+```
+
+Let's walk through some examples!
+
+
+#### ==, \|, %in%
+
+Salmonellosis AND Listeriosis
+
+```{r}
+# we can use the == and | operators
+id_sub <- filter(ids, Disease == "Salmonellosis" | Disease == "Listeriosis")
+
+# another way is with the %in% operator
+id_sub <- filter(ids, Disease %in% c("Salmonellosis", "Listeriosis"))
+
+# check results
+unique(id_sub$Disease)
+```
+
+#### &
+
+Salmonellosis AND Listeriosis AND Total
+
+```{r}
+# %in% as in previous example but add in & operator
+ids_sub <- filter(ids, 
+                  Disease %in% c("Salmonellosis", "Listeriosis") 
+                  & Sex == "Total")
+
+# another way is to use a comma to specify another requirement
+ids_sub <- filter(ids, 
+                  Disease %in% c("Salmonellosis", "Listeriosis"), 
+                  Sex == "Total")
+
+# we can create a table to see that no other Sex types were included
+table(ids_sub$Disease, ids_sub$Sex)
+```
+
+#### Multiple vectors
+
+Salmonellosis AND Listeriosis AND Total AND Bay Area
+
+```{r}
+# we have to create our own bay area vector
+bay_area <- c("Alameda", "Contra Costa", "San Francisco", "Marin", "San Mateo", "Sonoma", "Napa", "Solano", "Santa Clara")
+
+id_sub <- filter(ids, 
+                 Disease %in% c("Salmonellosis","Listeriosis"), 
+                 Sex == "Total",
+                 County %in% bay_area)
+
+unique(id_sub$County)
+```
+
+#### max()
+
+Max year
+
+```{r}
+ids_sub <- filter(ids, Year == max(Year))
+
+unique(ids_sub$Year)
+```
+
+#### between()
+
+Between 2017 - 2018
+
+```{r}
+ids_sub <- filter(ids, between(Year, 2017, 2018))
+
+unique(ids_sub$Year)
+```
+
+#### !is.na()
+
+No missing rates
+
+```{r}
+ids_sub <- filter(ids, !is.na(Rate))
+
+# check if there are any NA rates
+table(is.na(ids_sub$Rate))
+```
+
+
+### slice()
+
+Slice lets you index rows by their integer locations. With `slice()`, you can select, remove and duplicate rows. Here are a few helper functions:
+
++-------------------------------+---------------------------------------------------------+
+| slice_head() and slice_tail() | Select the first or last rows                           |
++-------------------------------+---------------------------------------------------------+
+| slice_sample()                | Randomly select rows                                    |
++-------------------------------+---------------------------------------------------------+
+| slice_min() and slice_max()   | Select rows with highest or lowest values of a variable |
++-------------------------------+---------------------------------------------------------+
+
+#### Base R syntax
+
+```{r, eval=F}
+df_steps[1:2,]
+df_steps[c(1,2),]
+head(df_steps,2)
+```
+
+Let's look see `slice()` at work! We will use the following data frame for the examples. We can see there are 59 rows. We will add an index column so that you can see which rows we slice.
+
+```{r}
+lister_2018 <- filter(ids, 
+                      Year == 2018,
+                      Disease == "Listeriosis",
+                      Sex == "Total") 
+
+lister_2018$index <- 1:nrow(lister_2018)
+
+str(lister_2018)
+```
+
+
+#### Index range
+
+Rows 45:59 (45 to 59)
+
+```{r}
+lister_range <- slice(lister_2018, 45:n())
+lister_range$index # check out our index column
+```
+
+#### Vector of indexes
+
+Rows 5, 10, 25, 32, 58
+
+```{r}
+lister_vector <- slice(lister_2018, c(5, 10, 25, 32, 58)) 
+lister_vector$index # check out our index column
+```
+
+#### slice_head()
+
+Top 10 rows
+
+```{r}
+lister_head <- slice_head(lister_2018, n = 10)
+lister_head$index # check out our index column
+```
+
+#### slice_tail()
+
+Bottom 10 rows
+
+```{r}
+lister_tail <- slice_tail(lister_2018, n = 10)
+lister_tail$index # check out our index column
+```
+
+#### slice_max()
+
+If we wanted to grab 10 rows with the highest case count, we could use `slice_max()`, making sure to set with_ties = FALSE.
+
+```{r}
+lister_max <- slice_max(lister_2018, 
+                        order_by = Cases,  # ordering by Cases column
+                        n = 10,            # grabbing the 
+                        with_ties = FALSE) # ignore ties in the Cases column
+
+lister_max
+```
+
+The reason we set with_ties to FALSE is because we want to grab the rows with the most cases, regardless of whether the number of cases matched. Had we set with_ties to TRUE, we would get more than 10 rows because another row with the same number case is not counted as unique.
+
+```{r}
+lister_max <- slice_max(lister_2018, 
+                        order_by = Cases,  # ordering by Cases column
+                        n = 10,            # grabbing the 
+                        with_ties = TRUE)  # include ties in the Cases column
+
+lister_max
+```
+
+#### slice_min()
+
+We can grab the rows with the fewest cases, limiting to 10 rows. But when we do this, we see that all of these rows are 0 cases.
+
+#### slice_min()
+
+```{r}
+lister_min <- slice_min(lister_2018, 
+                        order_by = Cases,
+                        n = 10, 
+                        with_ties = FALSE)
+
+lister_min # 10 rows
+```
+
+In this case, we may miss other rows that also have zero case count. To grab all rows with the lowest case count found within 10 rows, we can set with_ties = TRUE.
+
+```{r}
+lister_min <- slice_min(lister_2018, 
+                        order_by = Cases,
+                        n = 10, 
+                        with_ties = TRUE)
+
+lister_min # 34 rows
+```
+
+Notice, however, that we got more than 10 rows. Since we used with_ties = TRUE, `slice_min()` is grabbing all the rows with the lowest count (0 in this case) despite the n rows we specified.
+
+
+### sample
+
+Extract a sample of specified size or proportion.
+
+|               |                              |
+|---------------|------------------------------|
+| sample_n()    | Extract a number of rows     |
+| sample_frac() | Extract a proportion of rows |
+
+#### Base R syntax
+
+```{r, eval=F}
+df[sample(nrow(df), 3, replace = FALSE), ]
+```
+
+
+#### sample_n()
+
+Parameters
+
+-   size: corresponds to the number of rows to extract
+
+-   replace: whether to sample with replacement (TRUE or FALSE)
+
+```{r}
+lister_samp_n <- sample_n(lister_2018, 
+                          size = 10,       # number of rows to extract
+                          replace = FALSE) # whether to sample with replacement
+lister_samp_n
+```
+
+#### sample_frac()
+
+Parameters
+
+-   size: proportion of rows to extract (between 0 and 1)
+
+-   replace: whether to sample with replacement (TRUE or FALSE)
+
+```{r}
+lister_samp_frac <- sample_frac(lister_2018, 
+                                size = 0.1,      # 10% of counties
+                                replace = FALSE)
+lister_samp_frac
+```
+
+
+### distinct()
+
+Select only unique rows from a table.
+
+```{r}
+# let's create a smaller data frame to demonstrate
+ids_sub <- ids[, c("Disease", "County", "Year")]
+```
+
+#### Base R syntax
+
+```{r, eval=F}
+df[!duplicated(df), ]
+```
+
+
+#### Entire data frame
+
+You can run distinct on an entire data frame to pull out unique rows.
+
+```{r}
+nrow(ids_sub) # 176,469 rows
+
+id_distinct <- distinct(ids_sub)
+nrow(id_distinct) # 58,823 rows
+```
+
+#### Column
+
+You can run distinct on a specific column, which will return unique values within the given column. However, you lose the other columns. If you want to keep the other columns, set .keep_all = TRUE.
+
+```{r}
+id_distinct <- distinct(ids_sub, County)
+id_distinct 
+```
+
+#### .keep_all = TRUE
+
+Setting .keep_all = TRUE allows you to keep only unique values from the column specified and the remaining columns. `distinct()` will default to the first row found of that given value.
+
+```{r}
+id_distinct <- distinct(ids_sub, County, .keep_all=TRUE)
+id_distinct
+```
+
+#### Column combination
+
+You may also add more than one column to find unique combinations.
+
+```{r}
+id_distinct <- distinct(ids_sub, County, Disease)
+id_distinct
+```
+
+
+```{r}
+# setup data frame
+id_sub <- filter(ids, Disease == "Salmonellosis" | Disease == "Listeriosis")
+
+# creates an object with distinct rows taking into account every column
+id_distinct <- distinct(id_sub) 
+str(id_distinct)
+```
+
+### tibble::add_row()
+
+Add a row to an existing tibble / data frame.
+
+You will need to provide name / value pairs for columns that already exist. Any unset columns get an NA value.
+
+#### Base R syntax
+
+```{r, eval=F}
+df <- data.frame(A = 1:3, B = c("a", "b", "c"))
+new_row <- data.frame(A = 4, B = "d")
+updated_df <- rbind(df, new_row)
+```
+
+Here's the data frame we will use.
+
+```{r}
+# 5 rows
+lister_head <- slice_head(lister_2018, n = 5)
+
+# let's add a row with only information about Disease and County
+id_add <- lister_head %>% 
+  add_row(Disease = "E. Coli", County = "San Diego")
+
+id_add # we can see E. Coli row added
+```
+
+### arrange()
+
+Orders the rows of a data frame by the values of selected columns.
+
+#### Base R syntax
+
+```{r, eval=F}
+df[order(-df$A, df$B), ]
+```
+
+Here's the data frame we will use.
+
+```{r}
+id_sub <- ids %>% 
+  sample_n(size = 50, replace = FALSE) %>% 
+  select(Disease, County, Year, Cases)
+
+id_sub
+```
+
+
+#### Ascending
+
+Order by Disease alphabetically.
+
+```{r}
+arrange(id_sub, Disease)
+```
+
+#### Descending
+
+We can order reverse alphabetically with `desc()`.
+
+```{r}
+arrange(id_sub, desc(Disease)) # wrapping Disease column in desc() function
+```
+
+#### Mix
+
+We can also do a mix of ascending and descending, across multiple variables.
+
+```{r}
+# let's order by the highest number of cases followed by Disease alphabetically
+arrange(id_sub, desc(Cases), Disease)
+```
+

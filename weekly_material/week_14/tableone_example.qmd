@@ -1,0 +1,203 @@
+---
+title: "Tableone Example"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+```{r, message=F, warning=F}
+library(dplyr)
+library(nhanesA)
+library(tableone)
+```
+
+## Introduction to tableone
+
+The `tableone` package is a powerful R package designed to produce descriptive summary tables commonly used in biomedical research papers. The tables, often referred to as "Table 1", generally describe the baseline characteristics of different study groups in a standardized format. By using `tableone`, researchers can generate these descriptive statistics without the need to manually calculate each metric. [Checkout the tableone documentation!](https://github.com/kaz-yos/tableone)
+
+The following tutorial walks through the process of using `tableone` to create descriptive tables from the NHANES dataset, a comprehensive health survey in the United States.
+
+1.  Import data
+
+2.  Select variables
+
+3.  Decoding the data
+
+4.  Renaming columns
+
+5.  Use tableone
+
+6.  Applying advanced tableone options
+
+7.  Exporting our table
+
+### 1. Let's import our data.
+
+When working with the nhanes package, we'll use a number of built in functions, such as `nhanes()` to pull in data.
+
+```{r}
+data <- nhanesFromURL("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2013/DataFiles/DEMO_H.xpt")
+head(data)
+```
+
+### 2. Select variables
+
+Given the 47 variables in NHANES, let's simplify by selecting a subset of key columns for analysis. We'll focus on the following:
+
+-   Gender (RIAGENDR)
+
+-   Age (RIDAGEYR)
+
+-   Race (RIDRETH3)
+
+-   Education (DMDEDUC2)
+
+```{r}
+data <- data %>% 
+  select(
+    c("RIAGENDR",  # Gender 
+      "RIDAGEYR",  # Age
+      "RIDRETH3",  # Race
+      "DMDEDUC2")) # Education
+               
+head(data)
+```
+
+### 3. Decoding the data
+
+NHANES data is coded as factors for storage efficiency. We'll translate these codes to their actual meanings using the `nhanesTranslate()` function.
+
+```{r}
+data <- nhanesTranslate("DEMO_H",
+                        c("RIAGENDR",    # Gender 
+                          "RIDAGEYR",    # Age
+                          "RIDRETH3",    # Race
+                          "DMDEDUC2"),   # Education
+                        data = data)
+
+head(data)
+```
+
+### 4. Renaming columns
+
+While we could continue looking back at the codebook, we may have an easier time working with this data if we give our columns descriptive names.
+
+```{r}
+data <- data %>% 
+  rename( 
+    Gender= RIAGENDR,
+    Age= RIDAGEYR,
+    Race= RIDRETH3,
+    Education= DMDEDUC2)
+
+head(data)
+```
+
+### 5. Using tableone
+
+We have our data in a usable format! Let's see what `tableone` can do for us with creating descriptive statistics. We'll start with a basic table.
+
+```{r}
+tableone <- CreateTableOne(
+  data = data,                                    # the data set
+  vars = c("Gender", "Age", "Race", "Education"), # all variables
+  factorVars = c("Gender", "Race", "Education"))  # factors only
+              
+tableone
+```
+
+Pretty neat, right?!
+
+### 6. Applying advanced tableone options
+
+We can make this table even better using more features from `tableone`.
+
+#### Display all levels of categorical variables
+
+By default, some levels might be hidden. For example, you will notice above that the `Gender` variable only shows the percent of the study population that is "Female." We can show all levels with `showAllLevels = TRUE`.
+
+```{r}
+print(tableone, showAllLevels = TRUE)
+```
+
+#### Compact display for binary variables
+
+For binary variables, `cramVars = {var}` can consolidate display. We can only use this with binary classifiers otherwise our table will get too crammed to discern the data.
+
+```{r}
+print(tableone, cramVars = "Gender")
+```
+
+#### Handling non-normally distributed continuous variables
+
+For non-normal variables, we can opt to display medians and interquartile ranges. Here we'll demonstrate this feature on the `Age` variable.
+
+```{r}
+print(tableone, nonnormal = "Age")
+```
+
+#### Filtering variables
+
+##### Only categorical
+
+```{r}
+print(tableone$CatTable)
+```
+
+##### Only continuous
+
+```{r}
+print(tableone$ContTable, nonnormal = "Age")
+```
+
+#### Stratifying data
+
+We can stratify by variables like `Gender` to provide deeper insights. Of course, in your own studies you'll more likely stratify by exposure of interest (e.g. control, treatment 1, treatment 2, treatment 1 + 2) rather than by one variable.
+
+`tableone` will provide p-values when you stratify. There are a few defaults:
+
+-   Categorical variables: `chsq.test()`
+
+-   Normal continuous variables: `oneway.test()`
+
+-   Non-normal continuous variables: `kruskal.test()`
+
+##### Stratified Table 1 with normal values
+
+```{r}
+tableone_stratified <- CreateTableOne(data = data, # the data set
+               vars = c("Age", "Race", "Education"), # all variables
+               factorVars = c("Race", "Education"), # factors only
+               strata = "Gender") # stratifying variable (exposure of interest)
+              
+print(tableone_stratified)
+```
+
+##### Stratified Table 1 with non-normal values
+
+```{r}
+print(tableone_stratified, nonnormal = "Age")
+```
+
+### 7. Exporting our table
+
+We prepare our table export using `printToggle = FALSE`.
+
+```{r}
+tableone_csv <- print(tableone_stratified, printToggle = FALSE) 
+tableone_csv
+```
+
+Then, we can write out a file to a csv in our working directory.
+
+```{r}
+write.csv(tableone_csv,         # name of your Table 1
+          file = "Table_1.csv") # name of the created file
+```

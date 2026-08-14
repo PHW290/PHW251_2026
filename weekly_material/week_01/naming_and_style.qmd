@@ -1,0 +1,149 @@
+---
+title: "Best practices for naming things (and coding style)"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Why is naming things important in programming?
+
+Taking a very big step back - naming is important because there is already a lot of complexity in the datasets we use and analyses we perform in public health. We don't need to add more complexity with poorly organized and inconsistent code. Using consistent naming and coding style makes code easier to read and understand, so you can focus more of your attention on the complexity that matters.
+
+It's most important, whatever naming/style convention you choose, to remain consistent with yourself. If you are working with a group (or might possibly share your work with others), it's good practice to settle on a naming/style convention and prompt everyone to keep with it.
+
+## Naming and style guides
+
+There are lots of naming conventions and style guides out there. If you google "R coding style guides" you'll get many results, but the most common are the [Tidyverse Style Guide](https://style.tidyverse.org/index.html) and the [Google R Style Guide](https://google.github.io/styleguide/Rguide.html) (which formed the original structure of the Tidyverse style, but Google has since borrowed parts of how Tidyverse has evolved). It's obviously most straightforward to adopt an existing style, but it's also perfectly acceptable to adapt a style to meet your needs, or come up with something new on your own. If you do so and collaborate with others, it's generally appreciated to document your adapted style so that others can understand.
+
+There are also R packages built to help guide or correct your code according to specific style guides. The [styler package](https://styler.r-lib.org/) will take code that you've written (either a whole file or just a chunk of code) and apply the Tidyverse Style (or a custom style) to it. 
+
+
+## General naming/style guidance for this course
+
+The most important principle is to ensure your names are descriptive and meaningful while also as concise as possible. If you find this challenging, you are not alone. But with practice, you'll get figure out how to get there. Here are some tips to help.
+
+### Naming code files
+
+For script, R markdown, or quarto file names, make sure they are descriptive enough so that you know what is contained within without having to open up the file. You'll often be trying to figure out which file to open in a folder, so be descriptive as you can.
+
+We recommend **against** using code file names for version control (i.e. idmodel_v20230813.R, idmodel_ww_edits.R, idmodel_final.R). It quickly gets confusing for collaborators (including your future selves) to know which is the right file or which one has the final edits. We encourage you to use git for version control and cover how to do this later in the course!
+
+```{r, eval=F}
+# Good
+climate_data_import.Rmd
+disease_data_wrangle.Rmd
+
+# Bad
+program1.Rmd # not descriptive
+calculations.Rmd # way not descriptive
+program1_plus_calculations_v13_final.Rmd # don't use filenames for versioning
+
+```
+
+Also if you have files that are in sequence you start a file name with a number. But if there's even a remote chance that the number of files will exceed 9, add a leading 0. This will ensure that the files will sort correctly in a folder.
+
+```{r, eval=F}
+# Good
+01_climate_data_setup.Rmd
+02_climate_model_run.Rmd
+03_climate_model_viz.Rmd
+10_climate_id_match.Rmd
+20_might_never_have_this_many.Rmd
+22_but_you_get_the_point.Rmd
+...
+
+# Bad
+10_climate_id_match.Rmd
+1_climate_data_setup.Rmd
+20_might_never_have_this_many.Rmd
+2_climate_model_run.Rmd
+22_but_you_get_the_point.Rmd
+3_climate_model_viz.Rmd
+
+```
+
+### Naming objects (dataframes, columns, vectors)
+
+This is where a lot of naming happens. When naming objects in R, it is preferred to use:
+
+#### Use Descriptive Full Words...
+
+Abbreviations can get confusing especially if you forget what you intended them to stand for. So in general avoid abbreviations that are only familiar to you. Abbreviations and acronyms are okay if they are familiar to others and widely used.
+
+#### ... But Also Make Names Short As Possible
+
+The hard part of using full words is you also want to make names as short as possible. If you have a bunch of descriptive words describing the specifics of a dataframe and also specifics for each column, it becomes difficult to keep things tidy and on one line.
+
+```{r, eval=F}
+# here's a ridiculous, but not unheard of example
+
+legionellosis_europe_western_france_positive_hospitalized_2020$cases_severe_agecat25to44_industrial <- ifelse(legionellosis_europe_western_france_positive_hospitalized_2020$cases_severe_agecat25to44_employment == "industrial", 1, 0)
+```
+
+What I generally try to do is keep the number of words I use in a name to 3 and no more than 4. If I start to have four-word names, I'll take a step back and see if there's another way I can organize either my dataframes or columns. We'll get into ways of doing this later in the course - but an example with the above dataframe is it's probably okay to not filter out some of those categories. Even if I filter using continent = "Europe" and region == "western" and country == "France", if I'm just interested in French cases, I can just use france in the name. Likewise a hospitalized case infers that the test was positive, so I don't need both. And it's probably okay for me to keep all years in the dataframe; I can always filter out rows I don't need later in the process. So I could probably get away with calling the dataframe legionellosis_france_hospitalized.
+
+#### Consistent hierarchy
+
+It's also good to employ naming with hierarchy of increasing specificity. The parts of names start with the more general and become more specific moving left to right.
+
+```{r, eval = F}
+
+# Good
+covid_cases_breakthrough
+flu_forecast_seir
+case_rate_rank
+
+# Bad
+yr2022_numerator_mpx_rate
+
+
+```
+
+#### Avoid Using Names for Common R Functions
+
+Things will quickly become confusing if you use names of R functions, variables, or values for object names. Again, we're working to remove as much unneeded complexity from your code as possible.
+
+```{r, eval=F}
+# Bad
+T <- FALSE
+filter <- id_data %>% filter(T == FALSE)
+
+
+```
+
+#### Consistent case
+
+We advise using snake case (all lower case separated by underscore i.e airquality_region4_pm25) for names of objects, columns, functions etc. Other possibilities are:
+
+-   camel case: airqualityRegion4Pm25
+
+-   pascal case: AirqualityRegion4Pm25
+
+-   kebab case: airquality-region4-pm25
+
+You might join a group in the future that prefers camel or kebab case. But we recommend (and use!) snake case for its simplicity and consistency.
+
+### One Strategy to Consider
+
+If all of this seems overly complicated, I don't disagree with you. Naming things, just like any effort to keep things organized, takes effort (refer to the [famous quote](https://style.tidyverse.org/syntax.html) about naming being one of two difficult things in computer programming). But it will get easier with practice. One strategy I sometimes use so that I avoid getting hung up the naming at the expense of my actual work, is to use names temporarily as I'm programming and then go back and make them more descriptive later.
+
+```{r, eval = F}
+
+# example specifying 'sandbox' as a reminder to go back and name later
+# and using greek letters or nato alphabet (or whatever sequential thing you like)
+sandbox_legionella_alpha <- step_1
+sandbox_legionella_bravo <- step_2
+# <some additional steps>
+sandbox_legionella_echo_modelA <- model_stepA
+sandbox_legionella_echo_modelB <- model_stepB
+
+```
+
+Then when I'm all done and satisfied with the project (or part of the project), I'll go back and change the names to something more meaningful (often using the Find and Replace feature in RStudio - just make sure to use exact match!). You're also more likely to know what meaningful names will be at the end than it is to guess at the beginning. This would also be a good time to run the styler or lintr package on my code to make sure it matches up with my preferred style.

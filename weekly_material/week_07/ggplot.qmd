@@ -1,0 +1,382 @@
+---
+title: "Plots with ggplot"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggthemes)
+
+filepath <- paste0(getwd(),"/data/stds-by-disease-county-year-sex-2001-2021.csv")
+
+std <- read_csv(filepath) %>%
+  rename_with(~ tolower(gsub(" ","_",.x,fixed=TRUE))) %>%
+  rename(lower_ci=`lower_95%_ci`, upper_ci=`upper_95%_ci`)
+
+std_gg <- std %>%
+  mutate(year=as.character(year),
+         disease_f=factor(disease,ordered=T,levels=c("Chlamydia","Gonorrhea","Early Syphilis")))
+
+#compare non-factor versus factor
+table(std_gg$disease)
+table(std_gg$disease_f)
+
+
+```
+
+## Visualizations with ggplot
+
+Like everything in R, there are many options for creating visualizations. The most common function for creating static visualizations is ggplot, which is part of the ggplot2 package (which is part of the tidyverse). Ggplot was introduced earlier in the course as a tool for data exploration, but we will dive in a bit deeper in this lesson. That being said, ggplot2 is a massive package with a lot of capabilities, so we are still only covering a fraction of the package. There are a lot of resources available for ggplot, and many links added throughout this script.
+
+## ggplot overview:
+
+-   “grammar of graphics"
+
+-   Starts with empty graph that layers can be added to
+
+-   Visualize multiple variables
+
+    -   x and y axis variables
+
+    -   Additional variables as stratification, color, shape, etc
+
+-   Based on set aesthetics
+
+    -   Describe how variables in the data are mapped to visual properties
+
+    -   Can be specified in ggplot() and in individual layers
+
+## Starting with ggplot:
+
+![](images/ggplot_summary.png)
+
+Resources
+
+-   <https://r-graphics.org/>
+
+-   <https://ggplot2.tidyverse.org/reference/>
+
+-   <https://github.com/rstudio/cheatsheets/blob/master/data-visualization-2.1.pdf> 
+
+## Plot layers
+
+Most plot layers work similar and allow for specification of aesthetics:
+
+-   x variable
+
+-   y variable
+
+-   colour
+
+-   shape
+
+-   linetype
+
+Commonly used plot layers:
+
+![](images/ggplot_layers.png)
+
+Let's start building a plot. The goal is to create a stacked bar chart that represents Chlamydia cases by year and by sex.
+
+```{r}
+#Count of chlamydia over time, stratified by sex 
+std_gg1 <- std_gg %>% 
+  filter(county == "California" & disease_f=="Chlamydia" & sex != "Total") %>%
+  select(county, disease_f, cases, year, sex)
+
+#create an empty plot layer
+ggplot(data=std_gg1, aes(x=year,y=cases)) 
+
+#stacked bar chart 
+?geom_bar
+
+ggplot(data=std_gg1, aes(x=year,y=cases)) +
+  geom_col()
+
+ggplot(data=std_gg1, aes(x=year,y=cases)) +
+  geom_col(aes(fill=sex))
+
+ggplot(data=std_gg1, aes(x=year,y=cases)) +
+  geom_col(aes(fill=sex), position="dodge")
+
+#alternate geom_bar
+ggplot(data=std_gg1, aes(x=year,y=cases)) +
+  geom_bar(aes(fill=sex), stat="identity", position="stack") 
+
+
+
+```
+
+## Scales
+
+-   Scales control the details of how data values are translated to visual properties, specifically when using color, size, shape to specify different grouping of data.
+
+![](images/ggplot_scales.png)
+
+## Shapes and colors
+
+Shapes and colors can be specified for the plot overall or for different levels
+
+-   When shapes/colors apply to whole graph, specify in plot layer (i.e. geom_point())
+
+-   When shapes/colors indicate different groups/level, specify using scales
+
+### Shapes
+
+![](images/ggplot_shape.png)
+
+``` r
+geom_point(shape = 4)
+```
+
+``` r
+scale_shape_manual(values = c(1,4))
+```
+
+### Colors
+
+-   Use "color" or "colour" for borders and lines
+
+-   Use "fill" for shapes with different inner color (i.e shapes #21-25)
+
+-   Color palettes available through other packages (ex: wesanderson)
+
+    -   ![](images/ggplot_wesanderson.png)
+
+-   How to specify
+
+    -   Name - "blue"
+
+    -   Rgb - rbg(255,87,51)
+
+    -   Hex - "#669933"
+
+-   More resources
+
+    -   <https://htmlcolorcodes.com/>
+
+    -   <https://www.r-graph-gallery.com/ggplot2-color.html>  
+
+    -   <https://www.datanovia.com/en/blog/top-r-color-palettes-to-know-for-great-data-visualization/> 
+
+Let's update the following:
+
+-   Format the y-axis values
+
+-   Make the x-axis labels more legible
+
+-   Change the colors for male and female
+
+```{r}
+
+ggplot(data=std_gg1, aes(x=year,y=cases)) + 
+  geom_col(aes(fill=sex),position="stack") + 
+  scale_y_continuous(labels = function(x) format(x,big.mark=",",scientific=FALSE)) + 
+  scale_x_discrete(guide = guide_axis(angle=90)) +
+  scale_fill_manual(name="Sex",values=c("cyan3","darkorange"))
+# +
+  # scale_fill_manual(name="Sex",values=rainbow(2))
+
+```
+
+## Label and axis values
+
+Labels and axis values are really important when creating a graph, especially if it is being shared. Using the labs function, we can specify strings to use for an x-axis label, y-axis, title, subtitle, or a caption (text displayed below the plot). Limits for the x and y axis can be specified using xlim or ylim.
+
++----------------+------------------------------------------------------------------------------------------------+
+| labs()         | -   x - new x axis label (or xlab())                                                           |
+|                |                                                                                                |
+|                | -   y - new y axis label (or ylab())                                                           |
+|                |                                                                                                |
+|                | -   title - add title above graph (or ggtitle())                                               |
+|                |                                                                                                |
+|                | -   subtitle - add subtitle below title                                                        |
+|                |                                                                                                |
+|                | -   caption - add caption below plot                                                           |
++----------------+------------------------------------------------------------------------------------------------+
+| lims()         | -   a name--value pair                                                                         |
+|                |                                                                                                |
+|                | -   name must be an aesthetic (x, y, etc.)                                                     |
+|                |                                                                                                |
+|                | -   value must be either numeric, character, factor, or date/time                              |
++----------------+------------------------------------------------------------------------------------------------+
+| xlim(), ylim() | -   two numeric values, specifying the left/lower limit and the right/upper limit of the scale |
+|                |                                                                                                |
+|                | -   reverse the scale by providing If the larger value first                                   |
+|                |                                                                                                |
+|                | -   If one value is NA, the corresponding limit will come from the range of the data           |
++----------------+------------------------------------------------------------------------------------------------+
+
+Let's use some of those functions to do the following:
+
+-   Change the y axis to be labeled up to 250,000
+
+-   Label x-axis, y-axis
+
+-   Add title and caption
+
+```{r}
+
+ggplot(data=std_gg1, aes(x=year,y=cases)) + 
+  geom_col(aes(fill=sex),position="stack") + 
+  scale_y_continuous(labels = function(x) format(x,big.mark=",",scientific=FALSE), limits=c(0,250000)) +
+  scale_x_discrete(guide = guide_axis(angle=90)) +
+  scale_fill_manual(name="Sex",values=c("cyan3","darkorange")) +
+  # ylim(0,250000) +
+  labs(x="Year",y="Number of Chlamydia Cases",title="Counts of Chalmydia Cases by Sex in California, 2001-2021",caption="Data Source: California Department of Public Health") 
+  
+
+```
+
+## Themes
+
+-   Themes can be used to set the overall aesthetic for a ggplot
+
+-   Default: theme()
+
+-   Many other complete themes
+
+    -   theme_grey()/theme_gray() 
+
+    -   theme_bw() 
+
+    -   theme_minimal() 
+
+    -   theme_classic() 
+
+-   ggthemes packages for even more themes
+
+Within specified theme, there is flexibility to modify: 
+
+-   Legend.text
+
+-   Legend.title
+
+-   Legend.background
+
+-   Legend.position
+
+-   Legend.justification
+
+-   Plot.title (format)
+
+-   Axis.ticks
+
+-   Axis.text
+
+-   Etc.
+
+Some examples of themes:
+
+![](images/ggplot_themes.png)\
+Let's use some theme functions to do the following:
+
+-   Move the legend to the bottom
+
+-   Experiment with different overall themes
+
+```{r}
+ggplot(data=std_gg1, aes(x=year,y=cases)) + 
+  geom_col(aes(fill=sex),position="stack") + 
+  # ylim(0,250000) +
+  scale_y_continuous(labels = function(x) format(x,big.mark=",",scientific=FALSE),limits = c(0,250000)) + 
+  scale_x_discrete(guide = guide_axis(angle=90)) +
+  scale_fill_manual(name="Sex",values=c("cyan3","darkorange")) +
+  labs(x="Year",y="Number of Chlamydia Cases",title="Counts of Chalmydia Cases by Sex in California, 2001-201",caption="Data Source: California Department of Public Health") +
+  theme(legend.position="bottom") +
+  theme_tufte()
+```
+
+## Facets
+
+Generate multiple small plots that display different subsets of data.
+
+![](images/ggplot_facets.png){width="466"}
+
+**Key functions:**
+
+facet_grid() - matrix of panels defined by row and column faceting variables 
+
+facet_wrap() - wraps a 1d sequence of panels into 2d (better when only wanting to stratify by one variable)
+
+Let's create a new plot that utilizes facets.
+
+**Example:** Box plot
+
+Using the same file of STDs for state and counties, create a data frame that includes only county-level rates for all residents (regardless of sex) for the years 2018 through 2021.
+
+Generate a series of boxplots that show the range of rates by county by year and disease.
+
+```{r}
+#create data frame to work from
+std_gg2 <- std_gg %>%
+  filter(county != "California" & sex=="Total" & year>="2018" & year <= "2021") %>%
+  select(county, disease_f, rate, year)
+
+ggplot(data=std_gg2, aes(x=year,y=rate)) +
+  geom_boxplot(aes(color=disease_f)) +
+  facet_grid(rows=vars(disease_f),scales="free_y") +
+  scale_colour_manual(name="STD",values=c("#5B2C6F","#FF5733","#148F77")) +
+  theme(legend.position="none") +
+  labs(x="Year",y="Case rate per 100,000 population", title="Distribution of STD case rates by county over time",subtitle="2018-2021",caption="Note: y-axes differ by STD and should be compared with caution.")
+
+```
+
+Let's create one more set of plots that allows us to experiment a bit more with customizing the shapes
+
+**Example:** Line graph with confidence intervals
+
+Create a new data frame that includes only data from Alameda county for the total population.
+
+Generate a scatterplot that shows the rates of the 3 STD's over time. Ensure each STD is represented by a different color and shaped point. Additionally, generate a line graph that displays the same information but with confidence intervals.
+
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load("wesanderson")
+
+#trend over time in alameda county with confidence intervals
+std_gg3 <- std_gg %>%
+filter(county=="Alameda" & sex=="Total")
+
+#scatter plot
+ggplot(data=std_gg3,aes(x=year,y=rate)) +
+  geom_point()
+  
+ggplot(data=std_gg3,aes(x=year,y=rate)) +
+  geom_point(aes(shape=disease_f))
+
+
+ggplot(data=std_gg3,aes(x=year,y=rate)) +
+  geom_point(aes(shape=disease_f, color=disease_f))+ #to add points and choose shape by group
+  scale_shape_manual(values=c(15,17,19)) + #to manually change shape types by group
+  # scale_color_manual(values=c("cyan3","darkorange","red")) 
+  scale_color_manual(values=wes_palette(n=3, name="GrandBudapest1"))
+
+
+
+#line
+ggplot(data=std_gg3,aes(group=disease_f)) +
+  geom_ribbon(aes(x=year, ymin=lower_ci, ymax=upper_ci),fill="azure3") +
+  geom_line(aes(x=year,y=rate, linetype=disease_f)) + #to set line by group
+  scale_linetype(name="STD") + #to change the title of the legend
+  scale_x_discrete(guide = guide_axis(angle=90)) +
+  labs(x="Year",y="Case rate per 100,000 population", title = "STD Case Rates in Alameda County",subtitle="2001-2021",caption="Data is from CDPH. The grey bars represent 95% confidence intervals.") +
+  theme_tufte()
+```
+
+## Conclusion
+
+In conclusion, the ggplot2 package and ggplot have a lot of capabilities for creating customized visualizations. This lecture has really only skimmed the surface, so check out the various resources linked throughout this file in order to find options that meet the specific needs of your plots and graphs!

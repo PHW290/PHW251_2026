@@ -1,0 +1,173 @@
+---
+title: "Summary Tables in R"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+## Overview
+
+In this example we are using a built-in R dataset called `mtcars`. Using this built-in example dataset means you can run these examples without loading data from a separate file. We are going to use a package called `gtsummary` to make some nice descriptive summary tables with very little coding needed, as well as some tables for regression results. This package has a lot of customization options that are really handy, you can see the links included here for places on their website that will walk you through more details on customization of formatting.
+
+## Loading packages
+
+In this example, I am using pacman to manage packages. If you have pacman installed, you can run this and it will install and load all the other packages needed for you.
+
+```{r setup, include=TRUE, warning = FALSE, message = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, gtsummary, expss, kableExtra, gt)
+
+```
+
+## Data setup
+
+The steps below complete the set-up steps that will allow you create your tables, conduct your analysis, and have nice labels on them.
+
+1.  **Load and select data**.
+2.  **Code categorical variables as factors using the value labels from your cookbook (as needed)**. This just means that if you have numbers representing values (such as 1, 2, and 3 representing male, female, and non-binary) you'll want to recode these variable values first so that the tables make more sense.
+3.  **Assign labels**. This will make your column headers print out nicely for all tables.
+
+### 1. Load and select data
+
+Load sample data (`mtcars`), select the variables you are going to use for tables and analysis.
+
+```{r}
+
+# load sample data
+data(mtcars)
+
+data <-  mtcars %>%
+  # selecting the variables I'm going to use
+  select(mpg, am, cyl, hp, wt)
+
+```
+
+### 2. Code categorical variables as factors
+
+Now, we are going to re-code the factor variable `am` to be values that make more sense in tables.
+
+```{r}
+
+data <- data %>% 
+  # 0 becomes automatic and 1 becomes manual
+    mutate(am = as.factor(ifelse(am == 0, "Automatic", "Manual")))
+
+```
+
+### 3. Assign labels
+
+Now, use the package `expss` to add labels in R using the function `apply_labels`. This will make the tables show nice labels automatically (and will apply to any tables you make with the data).
+
+```{r}
+         
+data <- apply_labels(data,
+  # how to add variable name labels
+  mpg = "Miles Per Gallon", 
+  am = "Transmission Type", 
+  cyl = "Cylinders", 
+  hp = "Horesepower", 
+  wt = "Weight (1000 lbs.)")
+
+```
+
+## Summary Tables
+
+Create summary tables using the function `tbl_summary` from the `gtsummary` package.
+
+To see more details on how to customize these tables: https://www.danieldsjoberg.com/gtsummary/articles/tbl_summary.html
+
+### Simple summary table
+
+```{r}
+
+# create the summary table
+table1 <- tbl_summary(data) %>%
+  bold_labels()
+
+# print the table
+table1
+
+```
+
+### Summary table with data split by a categorical variable
+
+This divides data based on a categorical variable. Note: you cannot use a continuous variable for the `by` argument here, see the next example for that.
+
+```{r}
+
+# create the summary table
+# you should replace "am" with the variable you want to split the summaries by
+table2 <- tbl_summary(data, by = "am") %>%
+  # this argument will add an appropriate statistical test to compare by the "by" variable
+  add_p() %>%
+  bold_labels()
+
+# print the table
+table2
+
+```
+
+### Summary table for a continuous variable by categorical groups
+
+For this you will use a slightly different function called `tbl_continuous`. This will summarize a continuous variable by different binary or categorical variables in your data. NOTE: you don't want to include other continuous variables in this table.
+
+```{r}
+
+data2 <- data %>%
+  # select only the variables I want in this table
+  select(mpg, am, cyl)
+
+# data should be the name of the dataframe
+# replace mpg with the name of the continuous variable you are summarizing
+table3 <- tbl_continuous(data2, variable = mpg,
+                        # this returns the mean and standard deviation for the continuous variable
+                        statistic = list(everything() ~ "{mean} ({sd})")) %>%
+  add_p() %>%
+  bold_labels()
+
+table3
+```
+
+## Regression Tables
+
+This is an example of how you can use this `gtsummary` package to easily make nicer tables from your regression results too. In this example I'm comparing a simple unadjusted (crude) linear regression model with a multivariate adjusted model.
+
+Here is our crude model.
+
+```{r}
+
+lm_fit1 <- glm(mpg ~ am, data = data, family = "gaussian")
+
+
+```
+
+And our adjusted model.
+
+```{r}
+
+lm_fit2 <- glm(mpg ~ am + cyl + hp + wt, data = data, family = "gaussian")
+
+```
+
+Now, I'm going to make a summary table of the regression results using the function `tbl_regression` from the `gtsummary` package.
+
+To see more details on how to customize these tables: https://www.danieldsjoberg.com/gtsummary/articles/tbl_regression.html
+
+```{r}
+
+# create two tables, one for crude and one for adjusted (could print seperately if you wanted)
+results_table_crude <- tbl_regression(lm_fit1, exponentiate = FALSE)
+results_table_adj <- tbl_regression(lm_fit2, exponentiate = FALSE)
+
+# print both tables as a combined table
+tbl_merge(list(results_table_crude, results_table_adj), tab_spanner = c("Crude Model", "Adjusted Model"))
+
+```

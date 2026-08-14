@@ -1,0 +1,328 @@
+---
+title: "Unexpected Data: Detection & Correction"
+subtitle: "Missing Data"
+format: 
+  html:
+    smooth-scroll: true
+    toc: true
+    toc-location: left
+    anchor-sections: true
+    embed-resources: true
+    link-external-icon: true
+    link-external-newwindow: true
+editor: visual
+---
+
+# Overview
+
+-   Missing data
+
+    -   Data cleaning
+
+    -   Missing data types
+
+    -   How to work with missing data in base R
+
+    -   Assessing missingness in base R
+
+## Objectives
+
+-   Understand how R handles missing data
+
+## Missing data
+
+When cleaning data, missing values are both friend and foe.
+
+-   A **friend** when:
+
+    -   Tool for setting invalid values to missing
+
+    -   Used as a measure of incompleteness
+
+-   A **foe** when:
+
+    -   There is too much, or unexpected missing data
+
+    -   Missing data is impacting calculations
+
+### Missing data types
+
++----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------+----------------------------------------------+
+| Type           | About                                                                                                                                                                | Details                                                        | Identifying                                  |
++================+======================================================================================================================================================================+================================================================+==============================================+
+| **NA**         | Not available - Logical constant indicating a missing value. Can be coerced to any other data type vector: `NA_integer_`, `NA_real_`, `NA_complex_`, `NA_character_` | -   Data import                                                | `is.na(x)` - T/F if NA                       |
+|                |                                                                                                                                                                      |                                                                |                                              |
+|                |                                                                                                                                                                      | -   NA and "NA" are not interchangeable                        | `na.rm= TRUE` - removes NA from calculations |
+|                |                                                                                                                                                                      |                                                                |                                              |
+|                |                                                                                                                                                                      |     -   Any operation or calculation with NA will result in NA |                                              |
++----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------+----------------------------------------------+
+| **NULL**       | Object returned when an expression or function results in an undefined value.                                                                                        | -   Product of computations                                    | `is.null(x)`                                 |
+|                |                                                                                                                                                                      |                                                                |                                              |
+|                |                                                                                                                                                                      | -   Data import with unknown data type                         |                                              |
+|                |                                                                                                                                                                      |                                                                |                                              |
+|                |                                                                                                                                                                      | -   Not allowed in vector, okay in lists                       |                                              |
++----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------+----------------------------------------------+
+| **NaN**        | Not A Number - logical vector of length 1 and applies to numerical values only (not integer)                                                                         | -   Product of computations                                    | `is.nan(x)`                                  |
+|                |                                                                                                                                                                      |                                                                |                                              |
+|                |                                                                                                                                                                      | -   Ex: `sqrt(-1)`                                             |                                              |
++----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------+----------------------------------------------+
+| **Inf (-Inf)** | Infinite - Large number or product that is a result of division by zero.                                                                                             | -   Product of computations                                    | `is.infinite(x)`                             |
+|                |                                                                                                                                                                      |                                                                |                                              |
+|                |                                                                                                                                                                      | -   Ex: `10/0`                                                 |                                              |
++----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------+----------------------------------------------+
+
+### How to work with missing data
+
+#### NA
+
+Not Available - Logical constant indicating a missing value. Can be coerced to any other data type vector: NA_integer\_, NA_real\_, NA_complex\_, NA_character\_
+
+NA's have the following value, class, and length.
+
+```{r}
+a <- NA; a
+```
+
+```{r}
+class(a)
+```
+
+```{r}
+length(a)
+```
+
+Expressions with NA always return NA
+
+```{r}
+a + 1
+```
+
+```{r}
+a > 1
+```
+
+If we want to determine whether an object is NA we can't use the `==` operator otherwise we will still receive an NA value.
+
+```{r}
+a == NA
+```
+
+Instead, use `is.na()`.
+
+```{r}
+is.na(a)
+```
+
+Another method for determining if values are the same or "identical"
+
+```{r}
+identical(a, NA)
+identical(5, 5) # We can use the same function for other values, too.
+```
+
+There are different *types* of NAs too, which are commonly found when working in the tidyverse where type restrictions are used. We see these kinds of NAs typically when working with functions like `if_else()` and `case_when()`.
+
+```{r}
+a_char <- NA_character_
+class(a_char)
+is.na(a_char)
+```
+
+```{r}
+a_num <- NA_real_
+class(a_num)
+is.na(a_num)
+```
+
+`NA` vs `"NA"` is not the same!
+
+```{r}
+c <- "NA"
+c
+class(c)
+is.na(c)
+identical(a, c)
+
+
+```
+
+#### NULL
+
+Object returned when an expression or function results in an undefined value. An empty value.
+
+```{r}
+b <- NULL
+b
+```
+
+```{r}
+class(b)
+```
+
+```{r}
+length(b)
+```
+
+```{r}
+b+1
+```
+
+```{r}
+is.null(b)
+```
+
+`NULL` vs `"NULL"` is not the same
+
+```{r}
+d <- "NULL"
+d
+is.null(d)
+identical(b, d)
+```
+
+`NULL` vs `NA` is also not the same!
+
+```{r}
+a <- NA
+b <- NULL
+```
+
+```{r}
+is.null(a)
+```
+
+```{r}
+is.na(b)
+```
+
+```{r}
+identical(a, b)
+```
+
+#### NaN
+
+Not A Number - logical vector of a length 1 and applies to numerical values only (not integer)
+
+```{r}
+e <- sqrt(-1) # creating a NaN value
+e
+```
+
+```{r}
+e + 1
+```
+
+```{r}
+is.nan(e)
+```
+
+`is.na()` will pick up `NaN` values
+
+```{r}
+is.na(e)
+```
+
+However, `is.nan()` will not pick up `NA` values.
+
+```{r}
+a <- NA
+is.nan(a)
+```
+
+#### Inf
+
+Large number or a product that is a result of division by zero.
+
+```{r}
+f <- 10/0 # creating an infinite value
+f
+```
+
+We can also have negative infinite.
+
+```{r}
+f2 <- -10/0
+f2
+```
+
+```{r}
+is.infinite(f)
+```
+
+`Inf` is not recognized as `NA`.
+
+```{r}
+is.na(f)
+```
+
+### Assessing missingness
+
+We often need to find out the degree of missingness in our data. Here's a few ways we can make that assessment in base R.
+
+```{r}
+# first creating dummy data with 9 entries
+v <- c(NA, 3, 5, NaN, NULL, NA, NaN, 6, 7) 
+
+# when we print this data, notice that NULL doesn't appear in the vector
+v
+```
+
+Even if we use `length()` we still can't tell that a `NULL` value is present. We're expecting a length of 9 but get one of 8.
+
+```{r}
+length(v)
+```
+
+We can try indexing on the `NULL`'s location. When we do this, we get an `NA` value.
+
+```{r}
+v[5]
+```
+
+If we wanted to calculate the mean of this vector we'd quickly find out there's missing data. Many of these functions have built in test to help you avoid making erroneous calculations.
+
+```{r}
+mean(v)
+```
+
+The function forces you to make a decision to ignore `NA`'s if you want to complete the calculation. You really have two options:
+
+1.  Address the NA values in your data (e.g. following your statistical plan to deal with missingness, such as imputation with the mean or median)
+2.  Ignore the NA values in your calculation.
+
+When appropriate, you can ignore `NA` values with `na.rm = TRUE`.
+
+```{r}
+mean(v, na.rm = TRUE)
+```
+
+We can find out which element in a vector has a certain missing value.
+
+```{r}
+is.na(v)
+```
+
+We can count this missingness too.
+
+```{r}
+sum(is.na(v))
+sum(is.nan(v))
+```
+
+If we want to find the indexes are missing, we can use `which()`.
+
+```{r}
+which(is.na(v))
+```
+
+With these combinations of functions we can start to modify our data for our different use cases. Let's create a new vector with non-NA values.
+
+```{r}
+z <- v[which(!is.na(v))]
+# z <- v[!is.na(v)] #same result
+z
+```
+
+```{r}
+mean(z)
+```
