@@ -1,0 +1,218 @@
+---
+title: "PHW251 Problem Set 3"
+author: "Answer Key"
+format: pdf
+editor: visual
+---
+
+Render this file from the `problem_set_3` folder so the relative paths to `../data` and `table_replicate.png` resolve.
+
+\newpage
+
+### Question 1
+
+Create a data frame with three columns: ID (1, 2, 3), NAME ("Pam", "Jim", "Dwight"), and AGE (40, NA, 48).
+
+```{r office_df}
+office_df <- data.frame(
+  ID = c(1, 2, 3),
+  NAME = c("Pam", "Jim", "Dwight"),
+  AGE = c(40, NA, 48)
+)
+
+office_df
+```
+
+\newpage
+
+### Question 2
+
+Find the length, typeof, and class of the data frame from Question 1.
+
+```{r office_values}
+length(office_df)
+typeof(office_df)
+class(office_df)
+```
+
+A data frame is a list of columns, so `length()` is 3 (the number of columns), `typeof()` is `"list"`, and `class()` is `"data.frame"`.
+
+\newpage
+
+### Question 3
+
+Create a data frame and a tibble that match `table_replicate.png`: columns `data_id`, `gender`, and `temperature`.
+
+```{r tibble}
+library(tibble)
+
+covid_df <- data.frame(
+  data_id = c(101, 102, 103, 104, 105),
+  gender = c("female", "male", "non-binary", "male", NA),
+  temperature = c(98, 97.3, 101.1, 97.5, 99.6)
+)
+
+covid_tib <- tibble(
+  data_id = c(101, 102, 103, 104, 105),
+  gender = c("female", "male", "non-binary", "male", NA),
+  temperature = c(98, 97.3, 101.1, 97.5, 99.6)
+)
+
+covid_df
+covid_tib
+```
+
+\newpage
+
+### Question 4
+
+What are the key differences between data frames and tibbles? Why are tibbles preferable?
+
+Data frames and tibbles both store rectangular data, but tibbles change a few defaults that make them easier to work with:
+
+-   Tibbles do not use row names.
+-   Tibbles keep column names as you write them, including names with spaces or names that start with a number. Data frames will alter some of those names.
+-   A length-1 vector in a tibble is recycled to every row. You do not have to repeat a constant yourself.
+-   Inside `tibble()`, you can refer to a column you are creating in the same call.
+-   Printing a tibble shows the column types and only the first few rows, instead of dumping the whole table.
+-   Subsetting a tibble with `[, ]` still returns a tibble. The same subset of a data frame can drop down to a vector.
+
+Tibbles are preferable because that behavior is more predictable, the printout is easier to read, and the rest of the tidyverse is built to work with them.
+
+\newpage
+
+### Question 5
+
+Add a `results` column to the tibble from Question 3.
+
+-   101 = NEGATIVE
+-   102 = POSITIVE
+-   103 = NEGATIVE
+-   104 = NEGATIVE
+-   105 = NEGATIVE
+
+```{r covid_results}
+covid_tib$results <- c("NEGATIVE", "POSITIVE", "NEGATIVE",
+                       "NEGATIVE", "NEGATIVE")
+covid_tib
+```
+
+\newpage
+
+### Question 6
+
+Subject 102's temperature is 98.3, not 97.3.
+
+```{r fix_covid_results}
+covid_tib$temperature[covid_tib$data_id == 102] <- 98.3
+covid_tib
+```
+
+\newpage
+
+### Question 7
+
+Load `stds-by-disease-county-year-sex.csv` from the data folder. The first three rows are not part of the table, so skip them.
+
+```{r import_stds}
+stds <- read.csv(file = "../data/stds-by-disease-county-year-sex.csv",
+                  skip = 3)
+head(stds)
+```
+
+\newpage
+
+### Question 8
+
+How many rows?
+
+```{r}
+nrow(stds)
+```
+
+How many columns?
+
+```{r}
+ncol(stds)
+```
+
+What are the column names?
+
+```{r}
+colnames(stds)
+```
+
+What are the column types?
+
+```{r}
+sapply(stds, class)
+```
+
+There are 9558 rows and 6 columns: Disease, County, Year, Sex, Cases, and Population. Year, Cases, and Population are integers. The other three columns are character.
+
+\newpage
+
+### Question 9
+
+Keep the rows for 2015-2018 with `which()`. The subset should be 2124 rows by 6 columns.
+
+```{r which}
+stds_recent <- stds[which(stds$Year >= 2015 & stds$Year <= 2018), ]
+dim(stds_recent)
+```
+
+\newpage
+
+### Question 10
+
+Export the 2015-2018 subset as a csv in the data folder, then read it back.
+
+```{r export}
+write.csv(stds_recent,
+          file = "../data/stds_2015_2018.csv",
+          row.names = FALSE)
+
+stds_check <- read.csv(file = "../data/stds_2015_2018.csv")
+head(stds_check)
+dim(stds_check)
+```
+
+\newpage
+
+### Question 11
+
+`unique()` on County should return 59 counties. Then subset to one county.
+
+```{r unique}
+counties <- unique(stds$County)
+counties
+length(counties)
+```
+
+```{r county_subset}
+alameda <- stds[stds$County == "Alameda", ]
+head(alameda)
+```
+
+\newpage
+
+### Question 12
+
+In the county subset, add `rate = (Cases / Population) * 100,000`.
+
+```{r rate}
+alameda$rate <- (alameda$Cases / alameda$Population) * 100000
+head(alameda)
+```
+
+\newpage
+
+### Question 13
+
+Reply to the classmate whose import code is not a repeatable example. Include at least three specific suggestions.
+
+Three changes that would make this a repeatable example:
+
+1.  Delete `rm(list = ls())`. Clearing the whole environment is not part of the example, and it can wipe objects the other person needs in order to see the problem.
+2.  Load the package before using `read_csv()`. A repeatable example has to include `library(readr)` or `library(tidyverse)`, because another computer will not already have that function attached.
+3.  Do not depend on a local file the reader does not have. Paste a few rows with `dput()`, or use a small built-in data set, and include the exact error message. The arguments `header` and `row.names` also belong to `read.csv()`, not `read_csv()`, so the call should use the arguments for the function that is actually being run.

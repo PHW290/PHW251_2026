@@ -1,0 +1,160 @@
+---
+title: "PHW251 Problem Set 2"
+author: "Answer Key"
+date: "today"
+format: pdf
+editor: visual
+---
+
+Render this file from the `problem_set_2` folder so `co2_mm_mlo.csv` is found.
+
+\newpage
+
+### Question 1
+
+Use `Sys.Date()` and save the result.
+
+```{r get_date}
+today <- Sys.Date()
+today
+```
+
+Check the class and the storage type.
+
+```{r class_typeof}
+class(today)
+typeof(today)
+as.numeric(today)
+```
+
+Why is the object both a Date and a double?
+
+Dates in R are stored as the number of days before or after 1 January 1970. That count is an integer stored as a double, which is why `typeof()` returns `"double"` and `as.numeric()` prints a large number of days. Because the value came from `Sys.Date()`, R also keeps the Date class and prints it as a calendar date instead of as that number.
+
+`wday()` returns an abbreviated weekday when `label = TRUE`. The default for `abbr` is already `TRUE`, so the result looks like `"Sun"` or `"Mon"`.
+
+```{r current_wday}
+library(lubridate)
+
+current_wday <- wday(today, label = TRUE)
+current_wday
+```
+
+```{r days_vector}
+days <- levels(wday(Sys.Date(), label = TRUE))
+days
+```
+
+Those levels start on Sunday, so Monday through Friday are positions 2 through 6.
+
+```{r weekdays}
+weekdays <- days[2:6]
+weekdays
+```
+
+```{r weekday_test}
+current_wday %in% weekdays
+current_wday %in% days
+```
+
+The second check is always `TRUE`, because `current_wday` is one of the seven day names. The first check is `TRUE` on Monday through Friday and `FALSE` on Saturday or Sunday.
+
+\newpage
+
+### Question 2
+
+```{r co2_import}
+co2 <- read.csv(file = "co2_mm_mlo.csv", skip = 51, header = TRUE, row.names = NULL)
+colnames(co2) <- c("year", "month", "date", "average", "interpolated", "trend", "ndays")
+plot(x = co2$date, y = co2$average, pch = 20, cex = 0.1,
+     xlab = "Date", ylab = "Average CO2 (ppm)")
+tail(co2)
+```
+
+```{r co2_extract}
+avg_co2 <- co2$average
+avg_co2 <- co2[["average"]]
+```
+
+```{r co2_print}
+avg_co2
+```
+
+```{r co2_summary}
+summary(avg_co2)
+```
+
+Pre-industrial concentration was 280 ppm, so the percentage is `average / 280 * 100`.
+
+```{r co2_percentage}
+co2_pct <- avg_co2 / 280 * 100
+summary(co2_pct)
+```
+
+The `if`/`else` block follows the `percentage` flag. Both settings are printed below so the answer key shows each branch. In the assignment itself, change `percentage` and run the same block again.
+
+```{r if_else}
+percentage <- TRUE
+
+if (percentage == TRUE) {
+  summary(co2_pct)
+} else {
+  summary(avg_co2)
+}
+
+percentage <- FALSE
+
+if (percentage == TRUE) {
+  summary(co2_pct)
+} else {
+  summary(avg_co2)
+}
+```
+
+`date_decimal()` converts a decimal date to a calendar date. The three-letter time zone for Hawaii is `"HST"`.
+
+```{r time_zone}
+co2$date
+
+date_decimal(co2$date, tz = "HST")
+```
+
+### Question 3
+
+```{r for_loop}
+for (i in 1:10) {
+  print(i * 3)
+}
+```
+
+\newpage
+
+### Question 4
+
+```{r while_loop}
+i <- 1
+while (i <= 10) {
+  print(i * 3)
+  i <- i + 1
+}
+```
+
+The counter has to increase inside the loop. Without `i <- i + 1`, `i` stays at 1 and the loop never ends.
+
+\newpage
+
+### Question 5
+
+This answer is your own profile. It should look like `https://github.com/your-username`.
+
+### Question 6
+
+`git pull`
+
+You have been away from the project, so the first step is to download the commits your teammates pushed while you were gone. Pulling first keeps you from editing an outdated copy of the files.
+
+### Question 7
+
+`git push`
+
+A commit only saves the change on your computer. Your teammate cannot see it until that commit is pushed to the shared remote repository.
