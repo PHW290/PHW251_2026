@@ -1,0 +1,200 @@
+---
+title: "PHW251 Problem Set 5"
+author: "Answer Key"
+format: pdf
+editor: visual
+---
+
+Render this file from the `problem_set_5` folder. The bar chart matches `data/question_2_bar_CORRECTED.png`: boroughs in ascending order of children with BLL greater than 5 mcg/dL.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+```
+
+\newpage
+
+## Part 1
+
+### Question 1
+
+Load both sheets of `data/two_data_sheets.xlsx`. Sheet 1 is rat maze times. Sheet 2 is home visits.
+
+```{r}
+rats <- read_excel("data/two_data_sheets.xlsx", sheet = 1)
+visits <- read_excel("data/two_data_sheets.xlsx", sheet = 2)
+
+head(rats)
+head(visits)
+```
+
+\newpage
+
+### Question 2
+
+#### 2A
+
+Pivot the rat data from wide to long. Columns 1, 2, and 3 are the amount of cheese. Those names become a `cheese` column, and the maze times go in `time`.
+
+```{r}
+rats_long <- rats %>%
+  pivot_longer(
+    cols = c("1", "2", "3"),
+    names_to = "cheese",
+    values_to = "time"
+  )
+```
+
+#### 2B
+
+```{r}
+head(rats_long)
+```
+
+\newpage
+
+### Question 3
+
+Mean and standard deviation of maze time for each amount of cheese.
+
+```{r}
+rats_long %>%
+  group_by(cheese) %>%
+  summarize(
+    mean_time = mean(time),
+    sd_time = sd(time),
+    .groups = "drop"
+  )
+```
+
+\newpage
+
+### Question 4
+
+#### 4A
+
+Pivot the home visits from long to wide. Each value of `action` becomes its own column, filled with `count`.
+
+```{r}
+visits_wide <- visits %>%
+  pivot_wider(
+    names_from = action,
+    values_from = count
+  )
+```
+
+#### 4B
+
+```{r}
+visits_wide
+```
+
+\newpage
+
+## Part 2
+
+```{r loading, include=FALSE}
+file_path <- "data/Children_Under_6_yrs_with_Elevated_Blood_Lead_Levels__BLL_.csv"
+bll_nyc <- read_csv(file_path) %>% drop_na()
+colnames(bll_nyc) <- c("borough_id", "time_period",
+                       "bll_5", "bll_10", "bll_15", "total_tested")
+```
+
+### Question 5
+
+Recreate the 2015-2016 BLL rate table. Several rows share a borough and year, so the counts have to be summed before the rate is calculated.
+
+#### 5A
+
+Filter to 2015-2016 and label the boroughs. Making borough a factor keeps the table in the order 1-5.
+
+```{r}
+bll_1516 <- bll_nyc %>%
+  filter(time_period %in% c(2015, 2016)) %>%
+  mutate(borough = factor(
+    borough_id,
+    levels = 1:5,
+    labels = c("Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island")
+  ))
+```
+
+#### 5B
+
+Total children tested, and totals with BLL greater than 5, 10, and 15 mcg/dL, by borough and year.
+
+```{r}
+bll_1516 <- bll_1516 %>%
+  group_by(borough, time_period) %>%
+  summarize(
+    bll_5 = sum(bll_5),
+    bll_10 = sum(bll_10),
+    bll_15 = sum(bll_15),
+    total_tested = sum(total_tested),
+    .groups = "drop"
+  )
+```
+
+#### 5C
+
+Rate per 1,000 tested.
+
+```{r}
+bll_1516 <- bll_1516 %>%
+  mutate(
+    rate_5 = bll_5 / total_tested * 1000,
+    rate_10 = bll_10 / total_tested * 1000,
+    rate_15 = bll_15 / total_tested * 1000
+  )
+```
+
+#### 5D
+
+```{r}
+bll_1516 %>%
+  select(borough, time_period, rate_5, rate_10, rate_15) %>%
+  kable(
+    digits = 1,
+    booktabs = TRUE,
+    caption = "BLL Rates per 1,000 tested in New York City, 2015-2016",
+    col.names = c("Borough", "Year",
+                  "BLL >5 mcg/dL", "BLL >10 mcg/dL", "BLL >15 mcg/dL")
+  ) %>%
+  column_spec(1, bold = TRUE)
+```
+
+\newpage
+
+### Question 6
+
+The bar chart uses the full 2005-2016 file, not the 2015-2016 subset. Boroughs run from the smallest total to the largest.
+
+#### 6A
+
+```{r}
+bll_bar <- bll_nyc %>%
+  mutate(borough = factor(
+    borough_id,
+    levels = 1:5,
+    labels = c("Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island")
+  )) %>%
+  group_by(borough) %>%
+  summarize(bll_5 = sum(bll_5), .groups = "drop") %>%
+  mutate(borough = fct_reorder(borough, bll_5))
+
+bll_bar
+```
+
+#### 6B
+
+```{r}
+ggplot(bll_bar, aes(x = borough, y = bll_5)) +
+  geom_col(fill = "#ff6600", color = "#003884") +
+  labs(
+    title = "New York City: Elevated Blood Lead Levels 2005-2016 by Borough",
+    x = "boroughs",
+    y = "counts of BLL > 5 mcg/dL"
+  )
+```
+
+The ascending order is Staten Island, Manhattan, Bronx, Queens, Brooklyn.

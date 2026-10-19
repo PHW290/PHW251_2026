@@ -1,0 +1,128 @@
+---
+title: "PHW251 Problem Set 4"
+author: "Answer Key"
+format: pdf
+editor: visual
+---
+
+Render this file from the `problem_set_4` folder. The person file is in `../data`.
+
+```{r load}
+library(tidyverse)
+
+people <- read_csv("../data/500_Person_Gender_Height_Weight.csv")
+```
+
+### Question 1
+
+Make the column names lower case with no spaces, and rename "Location information" to `location`.
+
+```{r clean}
+people <- people %>%
+  rename_with(~ str_replace_all(tolower(.x), " ", "_")) %>%
+  rename(location = location_information)
+
+colnames(people)
+```
+
+\newpage
+
+### Question 2
+
+Calculate BMI with `if_else()`. Colorado, Hawaii, and New York use the imperial formula. Taiwan and the United Kingdom use the metric formula.
+
+-   metric: weight (kg) / [height (m)]^2
+-   imperial: 703 \* weight (lbs) / [height (in)]^2
+-   1 foot = 12 inches
+-   1 cm = 0.01 meter
+
+```{r bmi_calc}
+people <- people %>%
+  mutate(bmi = if_else(
+    location %in% c("New York", "Colorado", "Hawaii"),
+    (703 * weight) / (height * 12)^2,
+    weight / (height / 100)^2
+  ))
+
+summary(people$bmi)
+```
+
+\newpage
+
+### Question 3
+
+Categorize BMI with `case_when()`.
+
+-   Underweight: below 18.5
+-   Normal: 18.5-24.9
+-   Overweight: 25.0-29.9
+-   Obese: 30.0 and above
+
+```{r bmi_cat}
+people <- people %>%
+  mutate(bmi_cat = case_when(
+    bmi < 18.5 ~ "Underweight",
+    bmi < 25 ~ "Normal",
+    bmi < 30 ~ "Overweight",
+    TRUE ~ "Obese"
+  ))
+
+count(people, bmi_cat)
+```
+
+Could we have used `if_else()`?
+
+Yes. `if_else()` only returns one of two values, so four BMI groups would need nested `if_else()` calls. `case_when()` is the clearer function once there are more than two outcomes.
+
+\newpage
+
+### Question 4
+
+Arrange by location, then by BMI from high to low.
+
+```{r arrange_ds}
+people <- people %>%
+  arrange(location, desc(bmi))
+
+head(people)
+```
+
+### Question 5
+
+Drop the height, weight, and BMI columns with dplyr.
+
+```{r remove_cols}
+people <- people %>%
+  select(-height, -weight, -bmi)
+
+head(people)
+```
+
+\newpage
+
+### Optional Challenge
+
+Do the whole cleaning sequence in one dplyr pipeline.
+
+```{r mega_call}
+people_all <- read_csv("../data/500_Person_Gender_Height_Weight.csv") %>%
+  rename_with(~ str_replace_all(tolower(.x), " ", "_")) %>%
+  rename(location = location_information) %>%
+  mutate(
+    bmi = if_else(
+      location %in% c("New York", "Colorado", "Hawaii"),
+      (703 * weight) / (height * 12)^2,
+      weight / (height / 100)^2
+    ),
+    bmi_cat = case_when(
+      bmi < 18.5 ~ "Underweight",
+      bmi < 25 ~ "Normal",
+      bmi < 30 ~ "Overweight",
+      TRUE ~ "Obese"
+    )
+  ) %>%
+  arrange(location, desc(bmi)) %>%
+  select(-height, -weight, -bmi)
+
+head(people_all)
+```
