@@ -1,0 +1,192 @@
+---
+title: "PHW251 Take-home Midterm Exam"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+## Question 1
+
+
+```{r q1_code}
+
+# your code here
+
+```
+
+
+**1A. ANSWER HERE:**
+
+-   Year: 
+-   YOSHPD ID: 
+-   Facility Name:
+-   County Name: 
+-   ER Service Level Desc:
+-   Type: 
+-   Count: 
+
+
+\newpage
+
+## Question 2
+
+```{r q2_code}
+
+# your code here
+
+```
+
+**2A. ANSWER HERE:**
+
+\newpage
+
+
+## Question 3
+
+```{r q3_code}
+
+# your code here
+
+```
+
+**3A ANSWER HERE:**
+
+
+\newpage
+
+## Question 4
+
+
+```{r q4_code}
+
+# your code here
+
+```
+
+**4A. ANSWER HERE:**
+
+**4B. ANSWER HERE:**
+
+
+\newpage
+
+
+## Question 5
+
+```{r q5_code}
+
+# your code here
+
+```
+
+**5A. ANSWER HERE:**
+
+
+**5B. ANSWER HERE:**
+
+
+\newpage
+
+
+## Question 6
+
+```{r q6_code}
+
+# your code here
+
+```
+
+**6A. ANSWER HERE:**
+
+**6B. ANSWER HERE:**
+
+\newpage
+
+## Question 7
+
+```{r q7_code}
+
+# your code here
+
+```
+
+**7A. ANSWER HERE:**
+
+**7B. ANSWER HERE:**
+
+\newpage
+
+## Question 8
+
+```{r q8_code}
+
+# your code here
+
+```
+
+**8A. ANSWER HERE:**
+
+\newpage
+
+## Question 9
+
+```{r q9_code}
+
+# your code here
+
+```
+
+**9A. ANSWER HERE:**
+
+\newpage
+
+## Question 10
+
+```{r q10_code}
+
+# your code here
+
+```
+
+**10A. ANSWER HERE:**
+
+**10B. ANSWER HERE:**
+
+\newpage
+
+## Question 11 (extra credit)
+
+**NOTE: for  this extra credit problems, you can just put the code in the code chunk below, there is no separate answer to submit**
+
+```{r q11_code}
+
+# your code here
+
+```
+
+\newpage
+
+
+## Question 12 (extra credit)
+
+**NOTE: for  this extra credit problems, you can just put the code in the code chunk below (and make sure it produces the table in the knit file), there is no separate answer to submit**
+
+```{r q12_code}
+
+# your code here
+
+```
+
+
+
+
+
+
+
